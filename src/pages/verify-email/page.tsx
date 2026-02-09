@@ -1,28 +1,48 @@
-import { FormProvider, useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { FormProvider, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Button } from "@/components/ui/button"
-import { ControlledInput } from "@/components/form/ControlledInput"
+import { Button } from "@/components/ui/button";
+import { ControlledInput } from "@/components/form/ControlledInput";
 import {
   verifyEmailSchema,
   type VerifyEmailFormValues,
-} from "@/schemas/verify-email"
-import { useAuth } from "@/contexts/auth"
+} from "@/schemas/verify-email";
+import { useAuth } from "@/contexts/auth";
+import { ResponsiveDialog } from "@/components/ResponsiveDialog";
+import { useNavigate } from "react-router-dom";
+import { getApiErrorMessage } from "@/assets/utils/getApiErrorMessage";
+import React from "react";
 
 export default function VerifyEmailPage() {
-  const { verifyEmail } = useAuth()
+  const { verifyEmail } = useAuth();
+  const navigate = useNavigate();
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [dialogStatus, setDialogStatus] = React.useState<"success" | "error">(
+    "success",
+  );
+  const [dialogMessage, setDialogMessage] = React.useState("");
   const formMethods = useForm<VerifyEmailFormValues>({
     resolver: zodResolver(verifyEmailSchema),
     defaultValues: {
       email: "",
       code: "",
     },
-  })
+  });
 
   const onSubmit = async (data: VerifyEmailFormValues) => {
-    console.log("Verify email payload:", data)
-    await verifyEmail(data)
-  }
+    try {
+      await verifyEmail(data);
+      setDialogStatus("success");
+      setDialogMessage(
+        "Email verificado com sucesso. Faça login para continuar.",
+      );
+      setDialogOpen(true);
+    } catch (error) {
+      setDialogStatus("error");
+      setDialogMessage(getApiErrorMessage(error));
+      setDialogOpen(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -67,6 +87,40 @@ export default function VerifyEmailPage() {
           </form>
         </FormProvider>
       </div>
+
+      <ResponsiveDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        trigger={<button className="hidden" type="button" aria-hidden="true" />}
+        title={
+          dialogStatus === "success"
+            ? "Verificação concluída"
+            : "Não foi possível verificar"
+        }
+        description={
+          dialogStatus === "success"
+            ? "Continue para o login."
+            : "Tente novamente mais tarde."
+        }
+        footer={
+          dialogStatus === "success" ? (
+            <Button
+              onClick={() => {
+                setDialogOpen(false);
+                navigate("/login");
+              }}
+            >
+              Ir para login
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Fechar
+            </Button>
+          )
+        }
+      >
+        <p className="text-sm text-muted-foreground">{dialogMessage}</p>
+      </ResponsiveDialog>
     </div>
-  )
+  );
 }

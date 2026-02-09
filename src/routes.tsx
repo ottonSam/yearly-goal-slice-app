@@ -1,25 +1,19 @@
-import { Navigate, createBrowserRouter } from "react-router-dom"
+import { Navigate, createBrowserRouter } from "react-router-dom";
 
-import { styleguideRoutes } from "@/routes/styleguide"
-import RegisterPage from "@/pages/register/page"
-import LoginPage from "@/pages/login/page"
-import VerifyEmailPage from "@/pages/verify-email/page"
-import ProtectedRoute from "@/routes/ProtectedRoute"
-import MePage from "@/pages/me/page"
+import { styleguideRoutes } from "@/routes/styleguide";
+import RegisterPage from "@/pages/register/page";
+import LoginPage from "@/pages/login/page";
+import VerifyEmailPage from "@/pages/verify-email/page";
+import ProtectedRoute from "@/routes/ProtectedRoute";
+import MePage from "@/pages/me/page";
 
-const isDev = import.meta.env.VITE_ENV === "dev"
-
-const baseRoutes = isDev
-  ? [
-      {
-        path: "/",
-        element: <Navigate to="/styleguide" replace />,
-      },
-    ]
-  : []
+const isDev = import.meta.env.VITE_ENV === "dev";
 
 const router = createBrowserRouter([
-  ...baseRoutes,
+  {
+    path: "/",
+    element: <Navigate to="/me" replace />,
+  },
   {
     path: "/register",
     element: <RegisterPage />,
@@ -42,6 +36,6 @@ const router = createBrowserRouter([
     ],
   },
   ...(isDev ? styleguideRoutes : []),
-])
+]);
 
-export default router
+export default router;

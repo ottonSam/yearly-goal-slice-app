@@ -1,13 +1,20 @@
+import * as React from "react"
 import { FormProvider, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { ControlledInput } from "@/components/form/ControlledInput"
 import { loginSchema, type LoginFormValues } from "@/schemas/login"
 import { useAuth } from "@/contexts/auth"
+import { ResponsiveDialog } from "@/components/ResponsiveDialog"
+import { getApiErrorMessage } from "@/assets/utils/getApiErrorMessage"
 
 export default function LoginPage() {
   const { login } = useAuth()
+  const navigate = useNavigate()
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [dialogMessage, setDialogMessage] = React.useState("")
   const formMethods = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -17,8 +24,13 @@ export default function LoginPage() {
   })
 
   const onSubmit = async (data: LoginFormValues) => {
-    console.log("Login payload:", data)
-    await login(data)
+    try {
+      await login(data)
+      navigate("/")
+    } catch (error) {
+      setDialogMessage(getApiErrorMessage(error))
+      setDialogOpen(true)
+    }
   }
 
   return (
@@ -59,6 +71,21 @@ export default function LoginPage() {
           </form>
         </FormProvider>
       </div>
+
+      <ResponsiveDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        trigger={<button className="hidden" type="button" aria-hidden="true" />}
+        title="Não foi possível entrar"
+        description="Verifique suas credenciais e tente novamente."
+        footer={
+          <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            Fechar
+          </Button>
+        }
+      >
+        <p className="text-sm text-muted-foreground">{dialogMessage}</p>
+      </ResponsiveDialog>
     </div>
   )
 }

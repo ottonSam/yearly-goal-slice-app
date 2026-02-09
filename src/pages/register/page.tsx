@@ -1,13 +1,27 @@
-import { useForm, FormProvider, type SubmitErrorHandler } from "react-hook-form";
+import React from "react";
+import {
+  useForm,
+  FormProvider,
+  type SubmitErrorHandler,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { ControlledInput } from "@/components/form/ControlledInput";
 import { registerSchema, type RegisterFormValues } from "@/schemas/register";
 import { useAuth } from "@/contexts/auth";
+import { ResponsiveDialog } from "@/components/ResponsiveDialog";
+import { getApiErrorMessage } from "@/assets/utils/getApiErrorMessage";
 
 export default function RegisterPage() {
   const { register: registerUser } = useAuth();
+  const navigate = useNavigate();
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [dialogStatus, setDialogStatus] = React.useState<"success" | "error">(
+    "success",
+  );
+  const [dialogMessage, setDialogMessage] = React.useState("");
   const formMethods = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -21,8 +35,18 @@ export default function RegisterPage() {
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
-    console.log("Register payload:", data);
-    await registerUser(data);
+    try {
+      await registerUser(data);
+      setDialogStatus("success");
+      setDialogMessage(
+        "Conta criada com sucesso. Agora verifique o email para continuar.",
+      );
+      setDialogOpen(true);
+    } catch (error) {
+      setDialogStatus("error");
+      setDialogMessage(getApiErrorMessage(error));
+      setDialogOpen(true);
+    }
   };
 
   const onInvalid: SubmitErrorHandler<RegisterFormValues> = (errors) => {
@@ -104,6 +128,38 @@ export default function RegisterPage() {
           </form>
         </FormProvider>
       </div>
+
+      <ResponsiveDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        trigger={<button className="hidden" type="button" aria-hidden="true" />}
+        title={
+          dialogStatus === "success"
+            ? "Cadastro concluído"
+            : "Não foi possível cadastrar"
+        }
+        description={
+          dialogStatus === "success" ? "Continue para validar seu email." : ""
+        }
+        footer={
+          dialogStatus === "success" ? (
+            <Button
+              onClick={() => {
+                setDialogOpen(false);
+                navigate("/verify-email");
+              }}
+            >
+              Ir para verificação
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Fechar
+            </Button>
+          )
+        }
+      >
+        <p className="text-sm text-muted-foreground mt-2">{dialogMessage}</p>
+      </ResponsiveDialog>
     </div>
   );
 }
