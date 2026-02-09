@@ -4,8 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { ControlledInput } from "@/components/form/ControlledInput"
 import { loginSchema, type LoginFormValues } from "@/schemas/login"
+import { useAuth } from "@/contexts/auth"
 
 export default function LoginPage() {
+  const { login } = useAuth()
   const formMethods = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -14,8 +16,9 @@ export default function LoginPage() {
     },
   })
 
-  const onSubmit = (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     console.log("Login payload:", data)
+    await login(data)
   }
 
   return (

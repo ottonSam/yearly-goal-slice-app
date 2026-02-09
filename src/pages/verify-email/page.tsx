@@ -7,8 +7,10 @@ import {
   verifyEmailSchema,
   type VerifyEmailFormValues,
 } from "@/schemas/verify-email"
+import { useAuth } from "@/contexts/auth"
 
 export default function VerifyEmailPage() {
+  const { verifyEmail } = useAuth()
   const formMethods = useForm<VerifyEmailFormValues>({
     resolver: zodResolver(verifyEmailSchema),
     defaultValues: {
@@ -17,8 +19,9 @@ export default function VerifyEmailPage() {
     },
   })
 
-  const onSubmit = (data: VerifyEmailFormValues) => {
+  const onSubmit = async (data: VerifyEmailFormValues) => {
     console.log("Verify email payload:", data)
+    await verifyEmail(data)
   }
 
   return (

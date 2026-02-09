@@ -1,15 +1,13 @@
-import {
-  useForm,
-  FormProvider,
-  type SubmitErrorHandler,
-} from "react-hook-form";
+import { useForm, FormProvider, type SubmitErrorHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
 import { ControlledInput } from "@/components/form/ControlledInput";
 import { registerSchema, type RegisterFormValues } from "@/schemas/register";
+import { useAuth } from "@/contexts/auth";
 
 export default function RegisterPage() {
+  const { register: registerUser } = useAuth();
   const formMethods = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -22,8 +20,9 @@ export default function RegisterPage() {
     },
   });
 
-  const onSubmit = (data: RegisterFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     console.log("Register payload:", data);
+    await registerUser(data);
   };
 
   const onInvalid: SubmitErrorHandler<RegisterFormValues> = (errors) => {
