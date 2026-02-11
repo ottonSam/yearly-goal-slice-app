@@ -12,6 +12,8 @@ import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "@/assets/utils/getApiErrorMessage";
 import React from "react";
+import successGator from "@/assets/img/sucessgator.png";
+import errorGator from "@/assets/img/errorgator.png";
 
 export default function VerifyEmailPage() {
   const { verifyEmail } = useAuth();
@@ -119,7 +121,16 @@ export default function VerifyEmailPage() {
           )
         }
       >
-        <p className="text-sm text-muted-foreground">{dialogMessage}</p>
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src={dialogStatus === "success" ? successGator : errorGator}
+            alt={dialogStatus === "success" ? "Sucesso" : "Erro"}
+            className="h-28 w-28 object-contain"
+          />
+          <p className="text-center text-sm text-muted-foreground">
+            {dialogMessage}
+          </p>
+        </div>
       </ResponsiveDialog>
     </div>
   );

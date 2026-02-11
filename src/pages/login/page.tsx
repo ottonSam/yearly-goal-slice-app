@@ -1,7 +1,7 @@
 import * as React from "react"
 import { FormProvider, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { ControlledInput } from "@/components/form/ControlledInput"
@@ -9,6 +9,7 @@ import { loginSchema, type LoginFormValues } from "@/schemas/login"
 import { useAuth } from "@/contexts/auth"
 import { ResponsiveDialog } from "@/components/ResponsiveDialog"
 import { getApiErrorMessage } from "@/assets/utils/getApiErrorMessage"
+import errorGator from "@/assets/img/errorgator.png"
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -68,6 +69,18 @@ export default function LoginPage() {
             <div className="flex items-center justify-end">
               <Button type="submit">Entrar</Button>
             </div>
+            <div className="text-center text-sm text-muted-foreground">
+              Não tem conta?{" "}
+              <Link to="/register" className="text-primary hover:underline">
+                Criar conta
+              </Link>
+            </div>
+            <div className="text-center text-sm text-muted-foreground">
+              Precisa confirmar o email?{" "}
+              <Link to="/verify-email" className="text-primary hover:underline">
+                Verificar email
+              </Link>
+            </div>
           </form>
         </FormProvider>
       </div>
@@ -84,7 +97,16 @@ export default function LoginPage() {
           </Button>
         }
       >
-        <p className="text-sm text-muted-foreground">{dialogMessage}</p>
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src={errorGator}
+            alt="Erro"
+            className="h-28 w-28 object-contain"
+          />
+          <p className="text-center text-sm text-muted-foreground">
+            {dialogMessage}
+          </p>
+        </div>
       </ResponsiveDialog>
     </div>
   )

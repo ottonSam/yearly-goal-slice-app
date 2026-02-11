@@ -5,7 +5,7 @@ import {
   type SubmitErrorHandler,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { ControlledInput } from "@/components/form/ControlledInput";
@@ -13,6 +13,8 @@ import { registerSchema, type RegisterFormValues } from "@/schemas/register";
 import { useAuth } from "@/contexts/auth";
 import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { getApiErrorMessage } from "@/assets/utils/getApiErrorMessage";
+import successGator from "@/assets/img/sucessgator.png";
+import errorGator from "@/assets/img/errorgator.png";
 
 export default function RegisterPage() {
   const { register: registerUser } = useAuth();
@@ -125,6 +127,12 @@ export default function RegisterPage() {
               </p>
               <Button type="submit">Criar conta</Button>
             </div>
+            <div className="text-center text-sm text-muted-foreground">
+              Já tem conta?{" "}
+              <Link to="/login" className="text-primary hover:underline">
+                Entrar
+              </Link>
+            </div>
           </form>
         </FormProvider>
       </div>
@@ -158,7 +166,16 @@ export default function RegisterPage() {
           )
         }
       >
-        <p className="text-sm text-muted-foreground mt-2">{dialogMessage}</p>
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src={dialogStatus === "success" ? successGator : errorGator}
+            alt={dialogStatus === "success" ? "Sucesso" : "Erro"}
+            className="h-28 w-28 object-contain"
+          />
+          <p className="text-center text-sm text-muted-foreground mt-2">
+            {dialogMessage}
+          </p>
+        </div>
       </ResponsiveDialog>
     </div>
   );
