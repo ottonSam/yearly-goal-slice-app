@@ -19,6 +19,16 @@ export interface VerifyEmailPayload {
   code: string
 }
 
+export interface UpdateProfilePayload {
+  first_name: string
+  last_name: string
+}
+
+export interface ChangePasswordPayload {
+  current_password: string
+  new_password: string
+}
+
 export interface UserProfile {
   id?: string | number
   username?: string
@@ -44,4 +54,13 @@ export async function verifyEmail(payload: VerifyEmailPayload) {
 export async function me() {
   const { data } = await api.get<UserProfile>("/auth/me/")
   return data
+}
+
+export async function updateProfile(payload: UpdateProfilePayload) {
+  const { data } = await api.put<UserProfile>("/auth/update-profile/", payload)
+  return data
+}
+
+export async function changePassword(payload: ChangePasswordPayload) {
+  await api.post("/auth/change-password/", payload)
 }

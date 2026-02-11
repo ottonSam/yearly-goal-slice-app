@@ -6,6 +6,7 @@ import LoginPage from "@/pages/login/page";
 import VerifyEmailPage from "@/pages/verify-email/page";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import MePage from "@/pages/me/page";
+import AppLayout from "@/layouts/AppLayout";
 
 const isDev = import.meta.env.VITE_ENV === "dev";
 
@@ -30,8 +31,13 @@ const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        path: "/me",
-        element: <MePage />,
+        element: <AppLayout />,
+        children: [
+          {
+            path: "/me",
+            element: <MePage />,
+          },
+        ],
       },
     ],
   },
