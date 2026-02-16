@@ -17,6 +17,10 @@ const navigationItems = [
     name: "Meu perfil",
     href: "/me",
   },
+  {
+    name: "Calendários",
+    href: "/goal-calendars",
+  },
 ];
 
 export default function AppLayout() {
@@ -33,6 +37,14 @@ export default function AppLayout() {
     : user?.email
       ? user.email
       : "";
+
+  const isNavigationItemActive = (href: string) => {
+    if (href === "/goal-calendars") {
+      return location.pathname.startsWith("/goal-calendars");
+    }
+
+    return location.pathname === href;
+  };
 
   return (
     <div className="h-screen overflow-hidden bg-background text-foreground">
@@ -66,7 +78,7 @@ export default function AppLayout() {
                       to={item.href}
                       className={cn(
                         "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                        location.pathname === item.href
+                        isNavigationItemActive(item.href)
                           ? "bg-primary text-primary-foreground"
                           : "text-foreground hover:bg-muted",
                       )}

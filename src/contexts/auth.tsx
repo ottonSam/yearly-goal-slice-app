@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import {
   login as loginRequest,
@@ -18,8 +19,10 @@ import {
   setTokens,
   type AuthTokens,
 } from "@/lib/auth-tokens"
+import { userScopedKey } from "@/lib/query-keys"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient()
   const [tokens, setTokensState] = React.useState<AuthTokens | null>(() =>
     getTokens()
   )
@@ -28,14 +31,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = React.useCallback(() => {
     clearTokens()
+    queryClient.clear()
     setTokensState(null)
     setUser(null)
-  }, [])
+  }, [queryClient])
 
   const reloadUser = React.useCallback(async () => {
-    const profile = await meRequest()
+    const profile = await queryClient.fetchQuery({
+      queryKey: userScopedKey(user?.id, "auth", "me"),
+      queryFn: meRequest,
+    })
+
     setUser(profile)
-  }, [])
+  }, [queryClient, user?.id])
 
   React.useEffect(() => {
     setAuthEvents({
