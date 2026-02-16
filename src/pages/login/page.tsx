@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { ControlledInput } from "@/components/form/ControlledInput"
 import { loginSchema, type LoginFormValues } from "@/schemas/login"
-import { useAuth } from "@/contexts/auth"
+import { useAuth } from "@/contexts/use-auth"
 import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog"
 import {
   getApiErrorMessage,

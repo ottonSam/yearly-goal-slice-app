@@ -8,7 +8,7 @@ import {
   DrawerContent,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { useAuth } from "@/contexts/auth";
+import { useAuth } from "@/contexts/use-auth";
 import { cn } from "@/lib/utils";
 import logoGator from "@/assets/img/logogator.png";
 

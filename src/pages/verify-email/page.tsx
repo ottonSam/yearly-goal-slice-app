@@ -7,7 +7,7 @@ import {
   verifyEmailSchema,
   type VerifyEmailFormValues,
 } from "@/schemas/verify-email";
-import { useAuth } from "@/contexts/auth";
+import { useAuth } from "@/contexts/use-auth";
 import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog";
 import { useNavigate } from "react-router-dom";
 import {

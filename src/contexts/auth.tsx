@@ -10,6 +10,7 @@ import {
   type UserProfile,
   type VerifyEmailPayload,
 } from "@/api/auth"
+import { AuthContext, type AuthContextValue } from "@/contexts/auth-context"
 import { refreshTokens, setAuthEvents } from "@/api/http"
 import {
   clearTokens,
@@ -17,22 +18,6 @@ import {
   setTokens,
   type AuthTokens,
 } from "@/lib/auth-tokens"
-
-interface AuthContextValue {
-  user: UserProfile | null
-  accessToken: string | null
-  refreshToken: string | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  register: (payload: RegisterPayload) => Promise<number>
-  login: (payload: LoginPayload) => Promise<void>
-  verifyEmail: (payload: VerifyEmailPayload) => Promise<number>
-  logout: () => void
-  refreshSession: () => Promise<string | null>
-  reloadUser: () => Promise<void>
-}
-
-const AuthContext = React.createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tokens, setTokensState] = React.useState<AuthTokens | null>(() =>
@@ -135,12 +120,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = React.useContext(AuthContext)
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider")
-  }
-  return context
 }
