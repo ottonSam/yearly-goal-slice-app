@@ -10,13 +10,15 @@ import AppLayout from "@/layouts/AppLayout";
 import GoalCalendarFormPage from "@/pages/goal-calendar-form/page";
 import GoalCalendarsPage from "@/pages/goal-calendars/page";
 import GoalCalendarDetailsPage from "@/pages/goal-calendar-details/page";
+import ObjectivesHomePage from "@/pages/objectives/page";
+import ObjectiveFormPage from "@/pages/objective-form/page";
 
 const isDev = import.meta.env.VITE_ENV === "dev";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/me" replace />,
+    element: <Navigate to="/objectives" replace />,
   },
   {
     path: "/register",
@@ -39,6 +41,18 @@ const router = createBrowserRouter([
           {
             path: "/me",
             element: <MePage />,
+          },
+          {
+            path: "/objectives",
+            element: <ObjectivesHomePage />,
+          },
+          {
+            path: "/objectives/new",
+            element: <ObjectiveFormPage />,
+          },
+          {
+            path: "/objectives/edit/:objectiveId",
+            element: <ObjectiveFormPage />,
           },
           {
             path: "/goal-calendars",

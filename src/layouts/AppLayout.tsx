@@ -14,6 +14,10 @@ import logoGator from "@/assets/img/logogator.png";
 
 const navigationItems = [
   {
+    name: "Objetivos",
+    href: "/objectives",
+  },
+  {
     name: "Meu perfil",
     href: "/me",
   },
@@ -39,6 +43,10 @@ export default function AppLayout() {
       : "";
 
   const isNavigationItemActive = (href: string) => {
+    if (href === "/objectives") {
+      return location.pathname.startsWith("/objectives");
+    }
+
     if (href === "/goal-calendars") {
       return location.pathname.startsWith("/goal-calendars");
     }
@@ -92,7 +100,7 @@ export default function AppLayout() {
           </Drawer>
 
           <div className="flex flex-1 items-center justify-center">
-            <Link to="/me" className="flex items-center justify-center">
+            <Link to="/objectives" className="flex items-center justify-center">
               <img
                 src={logoGator}
                 alt="Yearly Goal"
