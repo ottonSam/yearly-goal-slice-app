@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import {
   login as loginRequest,
@@ -10,6 +11,7 @@ import {
   type UserProfile,
   type VerifyEmailPayload,
 } from "@/api/auth"
+import { AuthContext, type AuthContextValue } from "@/contexts/auth-context"
 import { refreshTokens, setAuthEvents } from "@/api/http"
 import {
   clearTokens,
@@ -17,24 +19,10 @@ import {
   setTokens,
   type AuthTokens,
 } from "@/lib/auth-tokens"
-
-interface AuthContextValue {
-  user: UserProfile | null
-  accessToken: string | null
-  refreshToken: string | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  register: (payload: RegisterPayload) => Promise<number>
-  login: (payload: LoginPayload) => Promise<void>
-  verifyEmail: (payload: VerifyEmailPayload) => Promise<number>
-  logout: () => void
-  refreshSession: () => Promise<string | null>
-  reloadUser: () => Promise<void>
-}
-
-const AuthContext = React.createContext<AuthContextValue | undefined>(undefined)
+import { userScopedKey } from "@/lib/query-keys"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient()
   const [tokens, setTokensState] = React.useState<AuthTokens | null>(() =>
     getTokens()
   )
@@ -43,14 +31,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = React.useCallback(() => {
     clearTokens()
+    queryClient.clear()
     setTokensState(null)
     setUser(null)
-  }, [])
+  }, [queryClient])
 
   const reloadUser = React.useCallback(async () => {
-    const profile = await meRequest()
+    const profile = await queryClient.fetchQuery({
+      queryKey: userScopedKey(user?.id, "auth", "me"),
+      queryFn: meRequest,
+    })
+
     setUser(profile)
-  }, [])
+  }, [queryClient, user?.id])
 
   React.useEffect(() => {
     setAuthEvents({
@@ -135,12 +128,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = React.useContext(AuthContext)
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider")
-  }
-  return context
 }

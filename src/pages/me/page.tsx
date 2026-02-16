@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ControlledInput } from "@/components/form/ControlledInput";
 import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog";
-import { useAuth } from "@/contexts/auth";
+import { useAuth } from "@/contexts/use-auth";
 import { type ApiErrorResult } from "@/assets/utils/getApiErrorMessage";
 import {
   changePasswordSchema,

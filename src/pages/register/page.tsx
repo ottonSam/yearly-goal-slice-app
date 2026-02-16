@@ -10,7 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ControlledInput } from "@/components/form/ControlledInput";
 import { registerSchema, type RegisterFormValues } from "@/schemas/register";
-import { useAuth } from "@/contexts/auth";
+import { useAuth } from "@/contexts/use-auth";
 import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog";
 import {
   getApiErrorMessage,

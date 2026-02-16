@@ -8,14 +8,22 @@ import {
   DrawerContent,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { useAuth } from "@/contexts/auth";
+import { useAuth } from "@/contexts/use-auth";
 import { cn } from "@/lib/utils";
 import logoGator from "@/assets/img/logogator.png";
 
 const navigationItems = [
   {
+    name: "Objetivos",
+    href: "/objectives",
+  },
+  {
     name: "Meu perfil",
     href: "/me",
+  },
+  {
+    name: "Calendários",
+    href: "/goal-calendars",
   },
 ];
 
@@ -33,6 +41,18 @@ export default function AppLayout() {
     : user?.email
       ? user.email
       : "";
+
+  const isNavigationItemActive = (href: string) => {
+    if (href === "/objectives") {
+      return location.pathname.startsWith("/objectives");
+    }
+
+    if (href === "/goal-calendars") {
+      return location.pathname.startsWith("/goal-calendars");
+    }
+
+    return location.pathname === href;
+  };
 
   return (
     <div className="h-screen overflow-hidden bg-background text-foreground">
@@ -66,7 +86,7 @@ export default function AppLayout() {
                       to={item.href}
                       className={cn(
                         "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                        location.pathname === item.href
+                        isNavigationItemActive(item.href)
                           ? "bg-primary text-primary-foreground"
                           : "text-foreground hover:bg-muted",
                       )}
@@ -80,7 +100,7 @@ export default function AppLayout() {
           </Drawer>
 
           <div className="flex flex-1 items-center justify-center">
-            <Link to="/me" className="flex items-center justify-center">
+            <Link to="/objectives" className="flex items-center justify-center">
               <img
                 src={logoGator}
                 alt="Yearly Goal"
