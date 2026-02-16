@@ -11,10 +11,11 @@ import { Button } from "@/components/ui/button";
 import { ControlledInput } from "@/components/form/ControlledInput";
 import { registerSchema, type RegisterFormValues } from "@/schemas/register";
 import { useAuth } from "@/contexts/auth";
-import { ResponsiveDialog } from "@/components/ResponsiveDialog";
-import { getApiErrorMessage } from "@/assets/utils/getApiErrorMessage";
-import successGator from "@/assets/img/sucessgator.png";
-import errorGator from "@/assets/img/errorgator.png";
+import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog";
+import {
+  getApiErrorMessage,
+  type ApiErrorResult,
+} from "@/assets/utils/getApiErrorMessage";
 
 export default function RegisterPage() {
   const { register: registerUser } = useAuth();
@@ -23,7 +24,10 @@ export default function RegisterPage() {
   const [dialogStatus, setDialogStatus] = React.useState<"success" | "error">(
     "success",
   );
-  const [dialogMessage, setDialogMessage] = React.useState("");
+  const [dialogResult, setDialogResult] = React.useState<ApiErrorResult>({
+    statusCode: undefined,
+    body: "",
+  });
   const formMethods = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -38,15 +42,16 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      await registerUser(data);
+      const statusCode = await registerUser(data);
       setDialogStatus("success");
-      setDialogMessage(
-        "Conta criada com sucesso. Agora verifique o email para continuar.",
-      );
+      setDialogResult({
+        statusCode,
+        body: "Conta criada com sucesso. Agora verifique o email para continuar.",
+      });
       setDialogOpen(true);
     } catch (error) {
       setDialogStatus("error");
-      setDialogMessage(getApiErrorMessage(error));
+      setDialogResult(getApiErrorMessage(error));
       setDialogOpen(true);
     }
   };
@@ -137,46 +142,25 @@ export default function RegisterPage() {
         </FormProvider>
       </div>
 
-      <ResponsiveDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        trigger={<button className="hidden" type="button" aria-hidden="true" />}
+      <HttpRequestResultDialog
         title={
           dialogStatus === "success"
             ? "Cadastro concluído"
             : "Não foi possível cadastrar"
         }
-        description={
-          dialogStatus === "success" ? "Continue para validar seu email." : ""
-        }
-        footer={
-          dialogStatus === "success" ? (
-            <Button
-              onClick={() => {
-                setDialogOpen(false);
-                navigate("/verify-email");
-              }}
-            >
-              Ir para verificação
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Fechar
-            </Button>
-          )
-        }
-      >
-        <div className="flex flex-col items-center gap-4">
-          <img
-            src={dialogStatus === "success" ? successGator : errorGator}
-            alt={dialogStatus === "success" ? "Sucesso" : "Erro"}
-            className="h-28 w-28 object-contain"
-          />
-          <p className="text-center text-sm text-muted-foreground mt-2">
-            {dialogMessage}
-          </p>
-        </div>
-      </ResponsiveDialog>
+        isOpen={dialogOpen}
+        isSuccess={dialogStatus === "success"}
+        statusCode={dialogResult.statusCode}
+        message={dialogResult.body}
+        closeAction={() => setDialogOpen(false)}
+        buttonTitle={dialogStatus === "success" ? "Ir para verificação" : "Fechar"}
+        buttonAction={() => {
+          setDialogOpen(false);
+          if (dialogStatus === "success") {
+            navigate("/verify-email");
+          }
+        }}
+      />
     </div>
   );
 }

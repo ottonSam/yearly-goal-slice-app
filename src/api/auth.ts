@@ -39,7 +39,8 @@ export interface UserProfile {
 }
 
 export async function register(payload: RegisterPayload) {
-  await api.post("/auth/register/", payload)
+  const response = await api.post("/auth/register/", payload)
+  return response.status
 }
 
 export async function login(payload: LoginPayload) {
@@ -48,7 +49,8 @@ export async function login(payload: LoginPayload) {
 }
 
 export async function verifyEmail(payload: VerifyEmailPayload) {
-  await api.post("/auth/verify-email/", payload)
+  const response = await api.post("/auth/verify-email/", payload)
+  return response.status
 }
 
 export async function me() {
@@ -62,5 +64,6 @@ export async function updateProfile(payload: UpdateProfilePayload) {
 }
 
 export async function changePassword(payload: ChangePasswordPayload) {
-  await api.post("/auth/change-password/", payload)
+  const response = await api.post("/auth/change-password/", payload)
+  return response.status
 }

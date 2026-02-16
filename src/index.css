@@ -168,6 +168,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body {
+    touch-action: manipulation;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: "Manrope", "Segoe UI", system-ui, sans-serif;

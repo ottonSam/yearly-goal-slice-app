@@ -8,12 +8,13 @@ import {
   type VerifyEmailFormValues,
 } from "@/schemas/verify-email";
 import { useAuth } from "@/contexts/auth";
-import { ResponsiveDialog } from "@/components/ResponsiveDialog";
+import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog";
 import { useNavigate } from "react-router-dom";
-import { getApiErrorMessage } from "@/assets/utils/getApiErrorMessage";
+import {
+  getApiErrorMessage,
+  type ApiErrorResult,
+} from "@/assets/utils/getApiErrorMessage";
 import React from "react";
-import successGator from "@/assets/img/sucessgator.png";
-import errorGator from "@/assets/img/errorgator.png";
 
 export default function VerifyEmailPage() {
   const { verifyEmail } = useAuth();
@@ -22,7 +23,10 @@ export default function VerifyEmailPage() {
   const [dialogStatus, setDialogStatus] = React.useState<"success" | "error">(
     "success",
   );
-  const [dialogMessage, setDialogMessage] = React.useState("");
+  const [dialogResult, setDialogResult] = React.useState<ApiErrorResult>({
+    statusCode: undefined,
+    body: "",
+  });
   const formMethods = useForm<VerifyEmailFormValues>({
     resolver: zodResolver(verifyEmailSchema),
     defaultValues: {
@@ -33,15 +37,16 @@ export default function VerifyEmailPage() {
 
   const onSubmit = async (data: VerifyEmailFormValues) => {
     try {
-      await verifyEmail(data);
+      const statusCode = await verifyEmail(data);
       setDialogStatus("success");
-      setDialogMessage(
-        "Email verificado com sucesso. Faça login para continuar.",
-      );
+      setDialogResult({
+        statusCode,
+        body: "Email verificado com sucesso. Faça login para continuar.",
+      });
       setDialogOpen(true);
     } catch (error) {
       setDialogStatus("error");
-      setDialogMessage(getApiErrorMessage(error));
+      setDialogResult(getApiErrorMessage(error));
       setDialogOpen(true);
     }
   };
@@ -90,48 +95,25 @@ export default function VerifyEmailPage() {
         </FormProvider>
       </div>
 
-      <ResponsiveDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        trigger={<button className="hidden" type="button" aria-hidden="true" />}
+      <HttpRequestResultDialog
         title={
           dialogStatus === "success"
             ? "Verificação concluída"
             : "Não foi possível verificar"
         }
-        description={
-          dialogStatus === "success"
-            ? "Continue para o login."
-            : "Tente novamente mais tarde."
-        }
-        footer={
-          dialogStatus === "success" ? (
-            <Button
-              onClick={() => {
-                setDialogOpen(false);
-                navigate("/login");
-              }}
-            >
-              Ir para login
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Fechar
-            </Button>
-          )
-        }
-      >
-        <div className="flex flex-col items-center gap-4">
-          <img
-            src={dialogStatus === "success" ? successGator : errorGator}
-            alt={dialogStatus === "success" ? "Sucesso" : "Erro"}
-            className="h-28 w-28 object-contain"
-          />
-          <p className="text-center text-sm text-muted-foreground">
-            {dialogMessage}
-          </p>
-        </div>
-      </ResponsiveDialog>
+        isOpen={dialogOpen}
+        isSuccess={dialogStatus === "success"}
+        statusCode={dialogResult.statusCode}
+        message={dialogResult.body}
+        closeAction={() => setDialogOpen(false)}
+        buttonTitle={dialogStatus === "success" ? "Ir para login" : "Fechar"}
+        buttonAction={() => {
+          setDialogOpen(false);
+          if (dialogStatus === "success") {
+            navigate("/login");
+          }
+        }}
+      />
     </div>
   );
 }

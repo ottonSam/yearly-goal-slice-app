@@ -7,15 +7,20 @@ import { Button } from "@/components/ui/button"
 import { ControlledInput } from "@/components/form/ControlledInput"
 import { loginSchema, type LoginFormValues } from "@/schemas/login"
 import { useAuth } from "@/contexts/auth"
-import { ResponsiveDialog } from "@/components/ResponsiveDialog"
-import { getApiErrorMessage } from "@/assets/utils/getApiErrorMessage"
-import errorGator from "@/assets/img/errorgator.png"
+import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog"
+import {
+  getApiErrorMessage,
+  type ApiErrorResult,
+} from "@/assets/utils/getApiErrorMessage"
 
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [dialogOpen, setDialogOpen] = React.useState(false)
-  const [dialogMessage, setDialogMessage] = React.useState("")
+  const [dialogResult, setDialogResult] = React.useState<ApiErrorResult>({
+    statusCode: undefined,
+    body: "",
+  })
   const formMethods = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -29,7 +34,7 @@ export default function LoginPage() {
       await login(data)
       navigate("/")
     } catch (error) {
-      setDialogMessage(getApiErrorMessage(error))
+      setDialogResult(getApiErrorMessage(error))
       setDialogOpen(true)
     }
   }
@@ -85,29 +90,16 @@ export default function LoginPage() {
         </FormProvider>
       </div>
 
-      <ResponsiveDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        trigger={<button className="hidden" type="button" aria-hidden="true" />}
+      <HttpRequestResultDialog
         title="Não foi possível entrar"
-        description="Verifique suas credenciais e tente novamente."
-        footer={
-          <Button variant="outline" onClick={() => setDialogOpen(false)}>
-            Fechar
-          </Button>
-        }
-      >
-        <div className="flex flex-col items-center gap-4">
-          <img
-            src={errorGator}
-            alt="Erro"
-            className="h-28 w-28 object-contain"
-          />
-          <p className="text-center text-sm text-muted-foreground">
-            {dialogMessage}
-          </p>
-        </div>
-      </ResponsiveDialog>
+        isOpen={dialogOpen}
+        isSuccess={false}
+        statusCode={dialogResult.statusCode}
+        message={dialogResult.body}
+        closeAction={() => setDialogOpen(false)}
+        buttonTitle="Fechar"
+        buttonAction={() => setDialogOpen(false)}
+      />
     </div>
   )
 }

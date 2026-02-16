@@ -24,9 +24,9 @@ interface AuthContextValue {
   refreshToken: string | null
   isAuthenticated: boolean
   isLoading: boolean
-  register: (payload: RegisterPayload) => Promise<void>
+  register: (payload: RegisterPayload) => Promise<number>
   login: (payload: LoginPayload) => Promise<void>
-  verifyEmail: (payload: VerifyEmailPayload) => Promise<void>
+  verifyEmail: (payload: VerifyEmailPayload) => Promise<number>
   logout: () => void
   refreshSession: () => Promise<string | null>
   reloadUser: () => Promise<void>
@@ -92,11 +92,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [logout, reloadUser])
 
   const register = React.useCallback(async (payload: RegisterPayload) => {
-    await registerRequest(payload)
+    return registerRequest(payload)
   }, [])
 
   const verifyEmail = React.useCallback(async (payload: VerifyEmailPayload) => {
-    await verifyEmailRequest(payload)
+    return verifyEmailRequest(payload)
   }, [])
 
   const login = React.useCallback(

@@ -1,40 +1,55 @@
-import axios from "axios";
+import axios from "axios"
 
-type ApiErrorData =
-  | { detail?: string; message?: string }
-  | Record<string, string[]>
+export type Json =
   | string
-  | undefined;
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json }
+  | Json[]
 
-export function getApiErrorMessage(error: unknown) {
+export interface ApiErrorResult {
+  statusCode: number | undefined
+  body: string | Json
+}
+
+function toJsonLikeValue(data: unknown): string | Json {
+  if (data === undefined) {
+    return "Sem detalhes de erro retornados pela API."
+  }
+
+  if (
+    typeof data === "string" ||
+    typeof data === "number" ||
+    typeof data === "boolean" ||
+    data === null
+  ) {
+    return data
+  }
+
+  if (Array.isArray(data) || (typeof data === "object" && data !== null)) {
+    return data as Json
+  }
+
+  return String(data)
+}
+
+export function getApiErrorMessage(error: unknown): ApiErrorResult {
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data as ApiErrorData;
+    const statusCode = error.response?.status
+    const body =
+      statusCode === 500
+        ? "internal server error"
+        : toJsonLikeValue(error.response?.data)
 
-    if (typeof data === "string") {
-      return data;
-    }
-
-    if (data && typeof data === "object") {
-      if ("detail" in data && typeof data.detail === "string") {
-        return data.detail;
-      }
-      if ("message" in data && typeof data.message === "string") {
-        return data.message;
-      }
-
-      const firstKey = Object.keys(data)[0];
-      if (firstKey) {
-        const firstValue = (data as Record<string, string[]>)[firstKey];
-        if (Array.isArray(firstValue) && firstValue.length > 0) {
-          return firstValue[0];
-        }
-      }
-    }
-
-    if (error.message) {
-      return error.message;
+    return {
+      statusCode,
+      body,
     }
   }
 
-  return "Não foi possível concluir a ação. Tente novamente mais tarde.";
+  return {
+    statusCode: undefined,
+    body: "Não foi possível concluir a ação. Tente novamente mais tarde.",
+  }
 }

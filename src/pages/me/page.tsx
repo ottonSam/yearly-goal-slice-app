@@ -14,10 +14,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ControlledInput } from "@/components/form/ControlledInput";
-import { ResponsiveDialog } from "@/components/ResponsiveDialog";
+import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog";
 import { useAuth } from "@/contexts/auth";
-import successGator from "@/assets/img/sucessgator.png";
-import errorGator from "@/assets/img/errorgator.png";
+import { type ApiErrorResult } from "@/assets/utils/getApiErrorMessage";
 import {
   changePasswordSchema,
   updateProfileSchema,
@@ -29,11 +28,11 @@ import {
 export default function MePage() {
   const { user, reloadUser } = useAuth();
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [dialogMessage, setDialogMessage] = React.useState("");
+  const [dialogResult, setDialogResult] = React.useState<ApiErrorResult>({
+    statusCode: undefined,
+    body: "",
+  });
   const [dialogTitle, setDialogTitle] = React.useState("Não foi possível salvar");
-  const [dialogDescription, setDialogDescription] = React.useState(
-    "Confira os dados e tente novamente."
-  );
   const [reloadOnClose, setReloadOnClose] = React.useState(false);
   const [dialogStatus, setDialogStatus] = React.useState<"success" | "error">(
     "error"
@@ -74,36 +73,43 @@ export default function MePage() {
     } catch (error) {
       const message =
         error instanceof Error && error.message === "Resposta inválida da API."
-          ? error.message
+          ? { statusCode: undefined, body: error.message }
           : getApiErrorMessage(error);
       setReloadOnClose(false);
       setDialogStatus("error");
       setDialogTitle("Não foi possível salvar");
-      setDialogDescription("Confira os dados e tente novamente.");
-      setDialogMessage(message);
+      setDialogResult(message);
       setDialogOpen(true);
     }
   };
 
   const handlePasswordSubmit = async (data: ChangePasswordFormValues) => {
     try {
-      await changePassword({
+      const statusCode = await changePassword({
         current_password: data.current_password,
         new_password: data.new_password,
       });
       setDialogStatus("success");
       setDialogTitle("Senha atualizada");
-      setDialogDescription("Sua senha foi alterada com sucesso.");
-      setDialogMessage("Clique em fechar para atualizar a tela.");
+      setDialogResult({
+        statusCode,
+        body: "Clique em fechar para atualizar a tela.",
+      });
       setReloadOnClose(true);
       setDialogOpen(true);
     } catch (error) {
       setReloadOnClose(false);
       setDialogStatus("error");
       setDialogTitle("Não foi possível salvar");
-      setDialogDescription("Confira os dados e tente novamente.");
-      setDialogMessage(getApiErrorMessage(error));
+      setDialogResult(getApiErrorMessage(error));
       setDialogOpen(true);
+    }
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    if (reloadOnClose) {
+      window.location.reload();
     }
   };
 
@@ -219,42 +225,16 @@ export default function MePage() {
         </CardContent>
       </Card>
 
-      <ResponsiveDialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open && reloadOnClose) {
-            window.location.reload();
-          }
-        }}
-        trigger={<button className="hidden" type="button" aria-hidden="true" />}
+      <HttpRequestResultDialog
         title={dialogTitle}
-        description={dialogDescription}
-        footer={
-          <Button
-            variant="outline"
-            onClick={() => {
-              setDialogOpen(false);
-              if (reloadOnClose) {
-                window.location.reload();
-              }
-            }}
-          >
-            Fechar
-          </Button>
-        }
-      >
-        <div className="flex flex-col items-center gap-4">
-          <img
-            src={dialogStatus === "success" ? successGator : errorGator}
-            alt={dialogStatus === "success" ? "Sucesso" : "Erro"}
-            className="h-28 w-28 object-contain"
-          />
-          <p className="text-center text-sm text-muted-foreground">
-            {dialogMessage}
-          </p>
-        </div>
-      </ResponsiveDialog>
+        isOpen={dialogOpen}
+        isSuccess={dialogStatus === "success"}
+        statusCode={dialogResult.statusCode}
+        message={dialogResult.body}
+        closeAction={handleDialogClose}
+        buttonTitle="Fechar"
+        buttonAction={handleDialogClose}
+      />
     </div>
   );
 }
