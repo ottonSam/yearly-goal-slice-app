@@ -1,0 +1,11 @@
+services:
+  yearly-goal-slice-app:
+    image: yearly-goal-slice-app:latest
+    env_file:
+      - .env.production
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-8080}:80"
+    restart: unless-stopped
