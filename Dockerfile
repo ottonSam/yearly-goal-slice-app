@@ -7,8 +7,8 @@ RUN npm ci
 
 COPY . .
 
-# Build in "prod" mode so Vite loads variables from .env.prod.
-RUN npm run build -- --mode prod
+# Build in "production" mode so Vite loads variables from .env.production.
+RUN npm run build -- --mode production
 
 FROM nginx:1.27-alpine
 
