@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "zod";
 
 const activityDaySchema = z.enum([
   "monday",
@@ -8,9 +8,9 @@ const activityDaySchema = z.enum([
   "friday",
   "saturday",
   "sunday",
-])
+]);
 
-const metricTypeSchema = z.enum(["FREQUENCY", "QUANTITY", "SPECIFIC_DAYS"])
+const metricTypeSchema = z.enum(["FREQUENCY", "QUANTITY", "SPECIFIC_DAYS"]);
 
 export const weeklyActivityFormSchema = z
   .object({
@@ -27,7 +27,7 @@ export const weeklyActivityFormSchema = z
         code: "custom",
         path: ["target_frequency"],
         message: "Informe a meta de frequência.",
-      })
+      });
     }
 
     if (data.metric_type === "QUANTITY" && !data.target_quantity) {
@@ -35,7 +35,7 @@ export const weeklyActivityFormSchema = z
         code: "custom",
         path: ["target_quantity"],
         message: "Informe a meta de quantidade.",
-      })
+      });
     }
 
     if (
@@ -46,9 +46,9 @@ export const weeklyActivityFormSchema = z
         code: "custom",
         path: ["specific_days"],
         message: "Selecione ao menos um dia específico.",
-      })
+      });
     }
-  })
+  });
 
 export const weeklyActivitySchema = z
   .object({
@@ -59,11 +59,12 @@ export const weeklyActivitySchema = z
     target_frequency: z.number().nullable().optional(),
     target_quantity: z.number().nullable().optional(),
     specific_days: z.array(activityDaySchema).nullable().optional(),
+    completion_percentage: z.number(),
   })
-  .passthrough()
+  .passthrough();
 
-export const weeklyActivityListSchema = z.array(weeklyActivitySchema)
+export const weeklyActivityListSchema = z.array(weeklyActivitySchema);
 
-export type WeeklyActivityFormValues = z.infer<typeof weeklyActivityFormSchema>
-export type WeeklyActivityMetricType = z.infer<typeof metricTypeSchema>
-export type WeeklyActivityDay = z.infer<typeof activityDaySchema>
+export type WeeklyActivityFormValues = z.infer<typeof weeklyActivityFormSchema>;
+export type WeeklyActivityMetricType = z.infer<typeof metricTypeSchema>;
+export type WeeklyActivityDay = z.infer<typeof activityDaySchema>;

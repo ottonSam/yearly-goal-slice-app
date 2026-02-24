@@ -30,6 +30,10 @@ export interface WeeklyActivityPayload {
   specific_days?: ActivityDay[]
 }
 
+export interface WeeklyActivityAiReportPayload {
+  reflection: string
+}
+
 export async function listActivityMetricTypes() {
   const { data } = await api.get<unknown>("/goal-calendars/activities/metric-types/")
   return data
@@ -116,6 +120,20 @@ export async function progressWeeklyActivitySpecificDays(
   const response = await api.post(
     `/goal-calendars/weeks/${weekId}/activities/${activityId}/progress/specific-days/`,
     { day }
+  )
+  return {
+    statusCode: response.status,
+    data: response.data,
+  }
+}
+
+export async function exportWeeklyActivityReportWithAi(
+  weekId: string,
+  payload: WeeklyActivityAiReportPayload
+) {
+  const response = await api.post<unknown>(
+    `/goal-calendars/weeks/${weekId}/activities/report/ai/`,
+    payload
   )
   return {
     statusCode: response.status,

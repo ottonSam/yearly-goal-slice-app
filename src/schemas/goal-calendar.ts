@@ -31,6 +31,7 @@ export const goalCalendarWeekSchema = z
     active: z.boolean(),
     created_at: z.string(),
     updated_at: z.string(),
+    average_completion_percentage: z.number(),
   })
   .passthrough();
 

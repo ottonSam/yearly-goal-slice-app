@@ -1,22 +1,26 @@
-import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
-import { FormProvider, useForm, type SubmitErrorHandler } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useNavigate, useParams } from "react-router-dom"
+import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  FormProvider,
+  useForm,
+  type SubmitErrorHandler,
+} from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate, useParams } from "react-router-dom";
 
 import {
   createObjective,
   getObjectiveById,
   updateObjective,
-} from "@/api/objectives"
-import { listGoalCalendars } from "@/api/goal-calendars"
+} from "@/api/objectives";
+import { listGoalCalendars } from "@/api/goal-calendars";
 import {
   getApiErrorMessage,
   type ApiErrorResult,
-} from "@/assets/utils/getApiErrorMessage"
-import { ControlledInput } from "@/components/form/ControlledInput"
-import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog"
-import { Button } from "@/components/ui/button"
+} from "@/assets/utils/getApiErrorMessage";
+import { ControlledInput } from "@/components/form/ControlledInput";
+import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -24,43 +28,46 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { useAuth } from "@/contexts/use-auth"
-import { userScopedKey } from "@/lib/query-keys"
-import { goalCalendarListSchema } from "@/schemas/goal-calendar"
+} from "@/components/ui/card";
+import { useAuth } from "@/contexts/use-auth";
+import { userScopedKey } from "@/lib/query-keys";
+import { goalCalendarListSchema } from "@/schemas/goal-calendar";
 import {
   objectiveFormSchema,
   objectiveSchema,
   type ObjectiveFormValues,
   type ObjectiveType,
-} from "@/schemas/objective"
+} from "@/schemas/objective";
 
 const OBJECTIVE_TYPE_OPTIONS: Array<{ value: ObjectiveType; label: string }> = [
   { value: "LONG_TERM", label: "Longo prazo" },
   { value: "MEDIUM_TERM", label: "Médio prazo" },
   { value: "GOAL_CALENDAR", label: "Calendário" },
-]
+];
 
-function isObjectiveCompleted(objective: { completed?: boolean; is_completed?: boolean }) {
-  return Boolean(objective.completed ?? objective.is_completed)
+function isObjectiveCompleted(objective: {
+  completed?: boolean;
+  is_completed?: boolean;
+}) {
+  return Boolean(objective.completed ?? objective.is_completed);
 }
 
 export default function ObjectiveFormPage() {
-  const navigate = useNavigate()
-  const { objectiveId } = useParams<{ objectiveId: string }>()
-  const isEditMode = Boolean(objectiveId)
-  const { user } = useAuth()
-  const userId = user?.id
+  const navigate = useNavigate();
+  const { objectiveId } = useParams<{ objectiveId: string }>();
+  const isEditMode = Boolean(objectiveId);
+  const { user } = useAuth();
+  const userId = user?.id;
 
-  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [dialogOpen, setDialogOpen] = React.useState(false);
   const [dialogStatus, setDialogStatus] = React.useState<"success" | "error">(
-    "error"
-  )
-  const [dialogTitle, setDialogTitle] = React.useState("")
+    "error",
+  );
+  const [dialogTitle, setDialogTitle] = React.useState("");
   const [dialogResult, setDialogResult] = React.useState<ApiErrorResult>({
     statusCode: undefined,
     body: "",
-  })
+  });
 
   const formMethods = useForm<ObjectiveFormValues>({
     resolver: zodResolver(objectiveFormSchema),
@@ -70,39 +77,47 @@ export default function ObjectiveFormPage() {
       title: "",
       description: "",
     },
-  })
+  });
 
-  const watchedObjectiveType = formMethods.watch("objective_type")
+  const watchedObjectiveType = formMethods.watch("objective_type");
 
   const { data: goalCalendars = [] } = useQuery({
     queryKey: userScopedKey(userId, "goal-calendars"),
     queryFn: async () => {
-      const data = await listGoalCalendars()
-      const parsed = goalCalendarListSchema.safeParse(data)
+      const data = await listGoalCalendars();
+      const parsed = goalCalendarListSchema.safeParse(data);
       if (!parsed.success) {
-        throw new Error("Resposta inválida da API.")
+        throw new Error("Resposta inválida da API.");
       }
-      return parsed.data
+      return parsed.data;
     },
-  })
+  });
 
-  const { data: objectiveData, isLoading: isLoadingObjective, error: objectiveError } =
-    useQuery({
-      queryKey: userScopedKey(userId, "objectives", "detail", objectiveId ?? "unknown"),
-      enabled: isEditMode && Boolean(objectiveId),
-      queryFn: async () => {
-        const data = await getObjectiveById(objectiveId!)
-        const parsed = objectiveSchema.safeParse(data)
-        if (!parsed.success) {
-          throw new Error("Resposta inválida da API.")
-        }
-        return parsed.data
-      },
-    })
+  const {
+    data: objectiveData,
+    isLoading: isLoadingObjective,
+    error: objectiveError,
+  } = useQuery({
+    queryKey: userScopedKey(
+      userId,
+      "objectives",
+      "detail",
+      objectiveId ?? "unknown",
+    ),
+    enabled: isEditMode && Boolean(objectiveId),
+    queryFn: async () => {
+      const data = await getObjectiveById(objectiveId!);
+      const parsed = objectiveSchema.safeParse(data);
+      if (!parsed.success) {
+        throw new Error("Resposta inválida da API.");
+      }
+      return parsed.data;
+    },
+  });
 
   React.useEffect(() => {
     if (!objectiveData) {
-      return
+      return;
     }
 
     formMethods.reset({
@@ -112,34 +127,34 @@ export default function ObjectiveFormPage() {
         : "",
       title: objectiveData.title,
       description: objectiveData.description ?? "",
-    })
-  }, [formMethods, objectiveData])
+    });
+  }, [formMethods, objectiveData]);
 
   React.useEffect(() => {
     if (!objectiveError) {
-      return
+      return;
     }
 
-    setDialogStatus("error")
-    setDialogTitle("Não foi possível carregar o objetivo")
-    setDialogResult(getApiErrorMessage(objectiveError))
-    setDialogOpen(true)
-  }, [objectiveError])
+    setDialogStatus("error");
+    setDialogTitle("Não foi possível carregar o objetivo");
+    setDialogResult(getApiErrorMessage(objectiveError));
+    setDialogOpen(true);
+  }, [objectiveError]);
 
   const isCompletedObjective = Boolean(
-    isEditMode && objectiveData && isObjectiveCompleted(objectiveData)
-  )
+    isEditMode && objectiveData && isObjectiveCompleted(objectiveData),
+  );
 
   const onSubmit = async (values: ObjectiveFormValues) => {
     if (isCompletedObjective) {
-      setDialogStatus("error")
-      setDialogTitle("Objetivo concluído não pode ser editado")
+      setDialogStatus("error");
+      setDialogTitle("Objetivo concluído não pode ser editado");
       setDialogResult({
         statusCode: undefined,
         body: "Este objetivo já está concluído e não pode ser alterado no front.",
-      })
-      setDialogOpen(true)
-      return
+      });
+      setDialogOpen(true);
+      return;
     }
 
     try {
@@ -148,41 +163,43 @@ export default function ObjectiveFormPage() {
         title: values.title,
         description: values.description,
         goal_calendar:
-          values.objective_type === "GOAL_CALENDAR" ? values.goal_calendar : undefined,
-      }
+          values.objective_type === "GOAL_CALENDAR"
+            ? values.goal_calendar
+            : undefined,
+      };
 
       const response =
         isEditMode && objectiveId
           ? await updateObjective(objectiveId, payload)
-          : await createObjective(payload)
+          : await createObjective(payload);
 
-      setDialogStatus("success")
-      setDialogTitle(isEditMode ? "Objetivo atualizado" : "Objetivo criado")
+      setDialogStatus("success");
+      setDialogTitle(isEditMode ? "Objetivo atualizado" : "Objetivo criado");
       setDialogResult({
         statusCode: response.statusCode,
         body: isEditMode
           ? "O objetivo foi atualizado com sucesso."
           : "O objetivo foi criado com sucesso.",
-      })
-      setDialogOpen(true)
+      });
+      setDialogOpen(true);
     } catch (error) {
-      setDialogStatus("error")
+      setDialogStatus("error");
       setDialogTitle(
         isEditMode
           ? "Não foi possível atualizar o objetivo"
-          : "Não foi possível criar o objetivo"
-      )
-      setDialogResult(getApiErrorMessage(error))
-      setDialogOpen(true)
+          : "Não foi possível criar o objetivo",
+      );
+      setDialogResult(getApiErrorMessage(error));
+      setDialogOpen(true);
     }
-  }
+  };
 
   const onInvalid: SubmitErrorHandler<ObjectiveFormValues> = (errors) => {
-    const firstField = Object.keys(errors)[0]
+    const firstField = Object.keys(errors)[0];
     if (firstField) {
-      formMethods.setFocus(firstField as keyof ObjectiveFormValues)
+      formMethods.setFocus(firstField as keyof ObjectiveFormValues);
     }
-  }
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
@@ -209,7 +226,9 @@ export default function ObjectiveFormPage() {
         </CardHeader>
         <CardContent>
           {isEditMode && isLoadingObjective ? (
-            <p className="text-sm text-muted-foreground">Carregando objetivo...</p>
+            <p className="text-sm text-muted-foreground">
+              Carregando objetivo...
+            </p>
           ) : (
             <FormProvider {...formMethods}>
               <form
@@ -232,7 +251,7 @@ export default function ObjectiveFormPage() {
                       formMethods.setValue(
                         "objective_type",
                         event.target.value as ObjectiveType,
-                        { shouldValidate: true }
+                        { shouldValidate: true },
                       )
                     }
                   >
@@ -258,14 +277,21 @@ export default function ObjectiveFormPage() {
                       value={formMethods.watch("goal_calendar") ?? ""}
                       disabled={isCompletedObjective}
                       onChange={(event) =>
-                        formMethods.setValue("goal_calendar", event.target.value, {
-                          shouldValidate: true,
-                        })
+                        formMethods.setValue(
+                          "goal_calendar",
+                          event.target.value,
+                          {
+                            shouldValidate: true,
+                          },
+                        )
                       }
                     >
                       <option value="">Selecione um calendário</option>
                       {goalCalendars.map((goalCalendar) => (
-                        <option key={String(goalCalendar.id)} value={String(goalCalendar.id)}>
+                        <option
+                          key={String(goalCalendar.id)}
+                          value={String(goalCalendar.id)}
+                        >
                           {goalCalendar.title}
                         </option>
                       ))}
@@ -302,7 +328,10 @@ export default function ObjectiveFormPage() {
                       Voltar para objetivos
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={formMethods.formState.isSubmitting}>
+                    <Button
+                      type="submit"
+                      disabled={formMethods.formState.isSubmitting}
+                    >
                       {formMethods.formState.isSubmitting
                         ? "Salvando..."
                         : isEditMode
@@ -324,19 +353,21 @@ export default function ObjectiveFormPage() {
         statusCode={dialogResult.statusCode}
         message={dialogResult.body}
         closeAction={() => {
-          setDialogOpen(false)
+          setDialogOpen(false);
           if (dialogStatus === "success") {
-            navigate("/objectives")
+            navigate("/objectives");
           }
         }}
-        buttonTitle={dialogStatus === "success" ? "Voltar para objetivos" : "Fechar"}
+        buttonTitle={
+          dialogStatus === "success" ? "Voltar para objetivos" : "Fechar"
+        }
         buttonAction={() => {
-          setDialogOpen(false)
+          setDialogOpen(false);
           if (dialogStatus === "success") {
-            navigate("/objectives")
+            navigate("/objectives");
           }
         }}
       />
     </div>
-  )
+  );
 }
