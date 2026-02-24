@@ -1,13 +1,12 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FormProvider, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { getGoalCalendarById } from "@/api/goal-calendars";
 import {
   createWeeklyActivity,
-  getWeeklyActivityReport,
   listActivityMetricTypes,
   listWeeklyActivities,
   progressWeeklyActivityFrequency,
@@ -16,12 +15,15 @@ import {
   updateWeeklyActivity,
   type ActivityDay,
 } from "@/api/weekly-activities";
-import { formatDateLongPtBr } from "@/assets/utils/formatDateLongPtBr";
 import {
   getApiErrorMessage,
   type ApiErrorResult,
 } from "@/assets/utils/getApiErrorMessage";
-import { ControlledInput } from "@/components/form/ControlledInput";
+import { ActivityCard } from "@/components/ActivityCard";
+import { ActivityFormDialog } from "@/components/ActivityFormDialog";
+import { type ActivityProgressPayload } from "@/components/ActivityProgressDialog";
+import { ActivityReportExportDialog } from "@/components/ActivityReportExportDialog";
+import { GoalWeekCalendar } from "@/components/GoalWeekCalendar";
 import { HttpRequestResultDialog } from "@/components/HttpRequestResultDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +33,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/use-auth";
 import { userScopedKey } from "@/lib/query-keys";
 import { goalCalendarDetailsSchema } from "@/schemas/goal-calendar";
@@ -42,6 +43,8 @@ import {
   type WeeklyActivityFormValues,
   type WeeklyActivityMetricType,
 } from "@/schemas/weekly-activity";
+import { Progress } from "@/components/ui/progress";
+import { CodePre } from "@/components/CodePre";
 
 const DAY_OPTIONS: Array<{ value: WeeklyActivityDay; label: string }> = [
   { value: "monday", label: "Segunda-feira" },
@@ -58,6 +61,68 @@ const DEFAULT_METRIC_TYPES: WeeklyActivityMetricType[] = [
   "QUANTITY",
   "SPECIFIC_DAYS",
 ];
+const ACTIVITY_DAY_BY_WEEKDAY_INDEX: WeeklyActivityDay[] = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+function parseIsoDateLocal(isoDate: string) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function formatIsoDateLocal(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDaysLocal(date: Date, days: number) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+}
+
+function getTodayIsoLocal() {
+  const today = new Date();
+  return formatIsoDateLocal(
+    new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+  );
+}
+
+function collectMarkedDatesForSpecificDays(
+  startDate: string,
+  endDate: string,
+  specificDays: WeeklyActivityDay[],
+) {
+  if (specificDays.length === 0) {
+    return [];
+  }
+
+  const markedDates: string[] = [];
+  const daySet = new Set(specificDays);
+  const start = parseIsoDateLocal(startDate);
+  const end = parseIsoDateLocal(endDate);
+
+  for (
+    let cursor = new Date(start);
+    cursor <= end;
+    cursor = addDaysLocal(cursor, 1)
+  ) {
+    const activityDay = ACTIVITY_DAY_BY_WEEKDAY_INDEX[cursor.getDay()];
+    if (daySet.has(activityDay)) {
+      markedDates.push(formatIsoDateLocal(cursor));
+    }
+  }
+
+  return markedDates;
+}
 
 function getMetricTypeLabel(metricType: WeeklyActivityMetricType) {
   if (metricType === "FREQUENCY") {
@@ -69,6 +134,18 @@ function getMetricTypeLabel(metricType: WeeklyActivityMetricType) {
   }
 
   return "Dias específicos";
+}
+
+function getSpecificDaysLabel(days: WeeklyActivityDay[] | null | undefined) {
+  return (
+    (days ?? [])
+      .map((day) =>
+        (
+          DAY_OPTIONS.find((option) => option.value === day)?.label ?? day
+        ).slice(0, 3),
+      )
+      .join(", ") || "Nenhum"
+  );
 }
 
 function normalizeMetricTypes(data: unknown): WeeklyActivityMetricType[] {
@@ -110,72 +187,6 @@ function toApiErrorResult(error: unknown): ApiErrorResult {
   return getApiErrorMessage(error);
 }
 
-function parsePercent(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return Math.max(0, Math.min(100, value));
-  }
-
-  if (typeof value === "string") {
-    const numeric = Number(value.replace("%", "").trim());
-    if (Number.isFinite(numeric)) {
-      return Math.max(0, Math.min(100, numeric));
-    }
-  }
-
-  return null;
-}
-
-function collectActivityCompletionById(report: unknown) {
-  const completionById: Record<string, number> = {};
-  if (!report || typeof report !== "object" || Array.isArray(report)) {
-    return completionById;
-  }
-
-  const reportRecord = report as Record<string, unknown>;
-  if (!Array.isArray(reportRecord.progress)) {
-    return completionById;
-  }
-
-  for (const item of reportRecord.progress) {
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      continue;
-    }
-
-    const itemRecord = item as Record<string, unknown>;
-    const rawId = itemRecord.id ?? itemRecord.activity_id;
-    if (typeof rawId !== "string" && typeof rawId !== "number") {
-      continue;
-    }
-
-    const parsedProgress = parsePercent(itemRecord.progress);
-    if (parsedProgress === null) {
-      continue;
-    }
-
-    completionById[String(rawId)] = parsedProgress;
-  }
-
-  return completionById;
-}
-
-function extractWeekCompletionPercent(report: unknown) {
-  if (!report || typeof report !== "object" || Array.isArray(report)) {
-    return null;
-  }
-
-  const reportRecord = report as Record<string, unknown>;
-  return parsePercent(reportRecord.general_progress);
-}
-
-function formatPercent(value: number | null) {
-  if (value === null) {
-    return "Sem dados";
-  }
-
-  const rounded = Math.round(value * 10) / 10;
-  return `${String(rounded).replace(".", ",")}%`;
-}
-
 export default function GoalCalendarDetailsPage() {
   const { goalCalendarId } = useParams<{ goalCalendarId: string }>();
   const navigate = useNavigate();
@@ -189,11 +200,6 @@ export default function GoalCalendarDetailsPage() {
   const [editingActivityId, setEditingActivityId] = React.useState<
     string | null
   >(null);
-  const [progressDayByActivity, setProgressDayByActivity] = React.useState<
-    Record<string, ActivityDay>
-  >({});
-  const [progressAmountByActivity, setProgressAmountByActivity] =
-    React.useState<Record<string, number>>({});
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [dialogStatus, setDialogStatus] = React.useState<"success" | "error">(
@@ -204,7 +210,10 @@ export default function GoalCalendarDetailsPage() {
     statusCode: undefined,
     body: "",
   });
-  const activityFormCardRef = React.useRef<HTMLDivElement | null>(null);
+  const [isCreateActivityFormOpen, setIsCreateActivityFormOpen] =
+    React.useState(false);
+  const [isAddReportDialogOpen, setIsAddReportDialogOpen] =
+    React.useState(false);
 
   const activityForm = useForm<WeeklyActivityFormValues>({
     resolver: zodResolver(weeklyActivityFormSchema),
@@ -217,9 +226,6 @@ export default function GoalCalendarDetailsPage() {
       specific_days: [],
     },
   });
-
-  const watchedMetricType = activityForm.watch("metric_type");
-  const watchedSpecificDays = activityForm.watch("specific_days") ?? [];
 
   const {
     data: calendar,
@@ -253,25 +259,26 @@ export default function GoalCalendarDetailsPage() {
       .sort((a, b) => a.week_num - b.week_num);
   }, [calendar]);
 
+  const currentWeekId = React.useMemo(() => {
+    if (weeks.length === 0) {
+      return "";
+    }
+
+    const todayIso = getTodayIsoLocal();
+    const currentWeek = weeks.find(
+      (week) => week.start_week <= todayIso && week.end_week >= todayIso,
+    );
+
+    return currentWeek?.id ?? "";
+  }, [weeks]);
+
   const defaultWeekId = React.useMemo(() => {
     if (weeks.length === 0) {
       return "";
     }
 
-    const today = new Date();
-    const localToday = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-    );
-    const todayIso = localToday.toISOString().slice(0, 10);
-
-    const currentWeek = weeks.find(
-      (week) => week.start_week <= todayIso && week.end_week >= todayIso,
-    );
-
-    return currentWeek?.id ?? weeks[weeks.length - 1].id;
-  }, [weeks]);
+    return currentWeekId || weeks[weeks.length - 1].id;
+  }, [currentWeekId, weeks]);
 
   React.useEffect(() => {
     setSelectedWeekId(defaultWeekId);
@@ -284,6 +291,17 @@ export default function GoalCalendarDetailsPage() {
 
     return weeks.find((week) => week.id === selectedWeekId) ?? null;
   }, [selectedWeekId, weeks]);
+  const selectedWeekReport = React.useMemo(
+    () => selectedWeek?.report?.trim() ?? "",
+    [selectedWeek],
+  );
+  const canShowReportExportDialog = React.useMemo(() => {
+    if (!selectedWeek) {
+      return false;
+    }
+
+    return getTodayIsoLocal() >= selectedWeek.end_week;
+  }, [selectedWeek]);
 
   const { data: metricTypes = DEFAULT_METRIC_TYPES, error: metricTypesError } =
     useQuery({
@@ -348,32 +366,36 @@ export default function GoalCalendarDetailsPage() {
     );
   }, [activities, selectedActivityId]);
 
-  const { data: activityReport, error: reportError } = useQuery({
-    queryKey: userScopedKey(
-      userId,
-      "goal-calendars",
-      "weeks",
-      selectedWeekId || "unknown",
-      "activities",
-      "report",
-    ),
-    enabled: Boolean(selectedWeekId),
-    queryFn: async () => getWeeklyActivityReport(selectedWeekId),
-  });
+  const markedDates = React.useMemo(() => {
+    if (!selectedWeek || !selectedActivity) {
+      return [];
+    }
 
-  const completionByActivityId = React.useMemo(
-    () => collectActivityCompletionById(activityReport),
-    [activityReport],
-  );
+    if (selectedActivity.metric_type !== "SPECIFIC_DAYS") {
+      return [];
+    }
 
-  const weekCompletionPercent = React.useMemo(
-    () => extractWeekCompletionPercent(activityReport),
-    [activityReport],
-  );
+    return collectMarkedDatesForSpecificDays(
+      selectedWeek.start_week,
+      selectedWeek.end_week,
+      selectedActivity.specific_days ?? [],
+    );
+  }, [selectedActivity, selectedWeek]);
+
+  const calendarEndDate = React.useMemo(() => {
+    if (!calendar) {
+      return "";
+    }
+
+    return (
+      calendar.end_date ??
+      weeks[weeks.length - 1]?.end_week ??
+      calendar.start_date
+    );
+  }, [calendar, weeks]);
 
   React.useEffect(() => {
-    const currentError =
-      calendarError ?? metricTypesError ?? activitiesError ?? reportError;
+    const currentError = calendarError ?? metricTypesError ?? activitiesError;
     if (!currentError) {
       return;
     }
@@ -382,7 +404,7 @@ export default function GoalCalendarDetailsPage() {
     setDialogTitle("Não foi possível carregar os dados da semana");
     setDialogResult(toApiErrorResult(currentError));
     setDialogOpen(true);
-  }, [activitiesError, calendarError, metricTypesError, reportError]);
+  }, [activitiesError, calendarError, metricTypesError]);
 
   const activityMutation = useMutation({
     mutationFn: async (values: WeeklyActivityFormValues) => {
@@ -450,6 +472,7 @@ export default function GoalCalendarDetailsPage() {
       setDialogOpen(true);
 
       setEditingActivityId(null);
+      setIsCreateActivityFormOpen(false);
       activityForm.reset({
         title: "",
         description: "",
@@ -472,48 +495,37 @@ export default function GoalCalendarDetailsPage() {
   });
 
   const progressMutation = useMutation({
-    mutationFn: async (params: {
+    mutationFn: async ({
+      activityId,
+      payload,
+    }: {
       activityId: string;
-      metricType: WeeklyActivityMetricType;
-      day?: ActivityDay;
-      amount?: number;
+      payload: ActivityProgressPayload;
     }) => {
       if (!selectedWeekId) {
         throw new Error("Semana não selecionada.");
       }
 
-      if (
-        (params.metricType === "FREQUENCY" ||
-          params.metricType === "SPECIFIC_DAYS") &&
-        !params.day
-      ) {
-        throw new Error("Selecione um dia para marcar o progresso.");
-      }
-
-      if (params.metricType === "QUANTITY" && !params.amount) {
-        throw new Error("Informe uma quantidade para marcar o progresso.");
-      }
-
-      if (params.metricType === "FREQUENCY") {
-        return progressWeeklyActivityFrequency(
+      if (payload.metricType === "QUANTITY") {
+        return progressWeeklyActivityQuantity(
           selectedWeekId,
-          params.activityId,
-          params.day!,
+          activityId,
+          payload.amount,
         );
       }
 
-      if (params.metricType === "QUANTITY") {
-        return progressWeeklyActivityQuantity(
+      if (payload.metricType === "FREQUENCY") {
+        return progressWeeklyActivityFrequency(
           selectedWeekId,
-          params.activityId,
-          params.amount!,
+          activityId,
+          payload.day as ActivityDay,
         );
       }
 
       return progressWeeklyActivitySpecificDays(
         selectedWeekId,
-        params.activityId,
-        params.day!,
+        activityId,
+        payload.day as ActivityDay,
       );
     },
     onSuccess: async (response) => {
@@ -537,13 +549,20 @@ export default function GoalCalendarDetailsPage() {
             "report",
           ),
         }),
+        queryClient.invalidateQueries({
+          queryKey: userScopedKey(
+            userId,
+            "goal-calendars",
+            goalCalendarId ?? "unknown",
+          ),
+        }),
       ]);
 
       setDialogStatus("success");
       setDialogTitle("Progresso registrado");
       setDialogResult({
         statusCode: response.statusCode,
-        body: "O progresso da atividade foi atualizado.",
+        body: "O progresso da atividade foi registrado com sucesso.",
       });
       setDialogOpen(true);
     },
@@ -570,13 +589,20 @@ export default function GoalCalendarDetailsPage() {
       target_quantity: activity.target_quantity ?? undefined,
       specific_days: activity.specific_days ?? [],
     });
+    setIsCreateActivityFormOpen(false);
+  };
 
-    requestAnimationFrame(() => {
-      activityFormCardRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+  const handleStartCreateActivity = () => {
+    setEditingActivityId(null);
+    activityForm.reset({
+      title: "",
+      description: "",
+      metric_type: "FREQUENCY",
+      target_frequency: 1,
+      target_quantity: undefined,
+      specific_days: [],
     });
+    setIsCreateActivityFormOpen(true);
   };
 
   const handleCancelEdit = () => {
@@ -589,34 +615,31 @@ export default function GoalCalendarDetailsPage() {
       target_quantity: undefined,
       specific_days: [],
     });
-  };
-
-  const handleToggleSpecificDay = (day: WeeklyActivityDay) => {
-    const currentDays = activityForm.getValues("specific_days") ?? [];
-    const nextDays = currentDays.includes(day)
-      ? currentDays.filter((item) => item !== day)
-      : [...currentDays, day];
-
-    activityForm.setValue("specific_days", nextDays, { shouldValidate: true });
+    setIsCreateActivityFormOpen(false);
   };
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
+        <div className="space-y-2 my-auto">
           <h1 className="font-display text-4xl font-semibold">
             {calendar?.title ?? "Detalhes do calendário"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Visualização geral do calendário e gerenciamento das semanas.
+            Gerencie seu progresso e metas semanais
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => navigate("/goal-calendars")}>
+        <div className="my-auto flex flex-1 lg:max-w-100 lg:flex-col flex-row flex-wrap gap-2">
+          <Button
+            variant="outline"
+            className="flex flex-1"
+            onClick={() => navigate("/goal-calendars")}
+          >
             Voltar para lista
           </Button>
           {goalCalendarId ? (
             <Button
+              className="flex flex-1"
               onClick={() => navigate(`/goal-calendars/edit/${goalCalendarId}`)}
             >
               Editar calendário
@@ -642,436 +665,217 @@ export default function GoalCalendarDetailsPage() {
         </Card>
       ) : (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumo do calendário</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
-              <p>
-                <span className="font-medium text-foreground">Início: </span>
-                {formatDateLongPtBr(calendar.start_date)}
-              </p>
-              <p>
-                <span className="font-medium text-foreground">Fim: </span>
-                {calendar.end_date
-                  ? formatDateLongPtBr(calendar.end_date)
-                  : "—"}
-              </p>
-              <p>
-                <span className="font-medium text-foreground">Semanas: </span>
-                {calendar.num_weeks}
-              </p>
-            </CardContent>
-          </Card>
+          {weeks.length > 0 && calendarEndDate ? (
+            <GoalWeekCalendar
+              startDate={calendar.start_date}
+              endDate={calendarEndDate}
+              weeks={weeks}
+              selectedWeekId={selectedWeekId}
+              currentWeekId={currentWeekId}
+              markedDates={markedDates}
+              onWeekSelect={setSelectedWeekId}
+            />
+          ) : null}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Gerenciamento das semanas</CardTitle>
-              <CardDescription>
-                Selecione uma semana ativa para visualizar os detalhes.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="week-select"
-                  className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground"
-                >
-                  Semana
-                </label>
-                <select
-                  key={defaultWeekId}
-                  id="week-select"
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
-                  defaultValue={defaultWeekId}
-                  onChange={(event) => setSelectedWeekId(event.target.value)}
-                >
-                  {weeks.map((week) => (
-                    <option key={week.id} value={week.id}>
-                      Semana {week.week_num}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {weeks.length === 0 ? (
-                <Card className="border-dashed">
-                  <CardContent className="pt-6 text-sm text-muted-foreground">
-                    Nenhuma semana ativa encontrada neste calendário.
-                  </CardContent>
-                </Card>
-              ) : selectedWeek ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Semana {selectedWeek.week_num}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-                    <p>
-                      <span className="font-medium text-foreground">
-                        Início:{" "}
-                      </span>
-                      {formatDateLongPtBr(selectedWeek.start_week)}
-                    </p>
-                    <p>
-                      <span className="font-medium text-foreground">Fim: </span>
-                      {formatDateLongPtBr(selectedWeek.end_week)}
-                    </p>
-                    <p className="sm:col-span-2">
-                      <span className="font-medium text-foreground">
-                        Relatório da semana:{" "}
-                      </span>
-                      {selectedWeek.report ? "Disponível" : "Pendente"}
-                    </p>
-                    <p className="sm:col-span-2">
-                      <span className="font-medium text-foreground">
-                        Concluído na semana:{" "}
-                      </span>
-                      {formatPercent(weekCompletionPercent)}
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="border-dashed">
-                  <CardContent className="pt-6 text-sm text-muted-foreground">
-                    Selecione uma semana para visualizar os detalhes.
-                  </CardContent>
-                </Card>
-              )}
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="activity-select"
-                  className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground"
-                >
-                  Atividade
-                </label>
-                <select
-                  id="activity-select"
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
-                  value={selectedActivityId}
-                  onChange={(event) =>
-                    setSelectedActivityId(event.target.value)
-                  }
-                  disabled={isLoadingActivities || activities.length === 0}
-                >
-                  {activities.map((activity) => (
-                    <option key={activity.id} value={activity.id}>
-                      {activity.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {isLoadingActivities ? (
-                <Card className="border-dashed">
-                  <CardContent className="pt-6 text-sm text-muted-foreground">
-                    Carregando atividades...
-                  </CardContent>
-                </Card>
-              ) : selectedActivity ? (
-                <Card>
-                  <CardHeader className="space-y-2">
-                    <CardTitle className="text-lg">
-                      {selectedActivity.title}
-                    </CardTitle>
-                    <CardDescription>
-                      {selectedActivity.description || "Sem descrição."}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground">
-                        Métrica:{" "}
-                      </span>
-                      {getMetricTypeLabel(selectedActivity.metric_type)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground">
-                        Concluído:{" "}
-                      </span>
-                      {formatPercent(
-                        completionByActivityId[selectedActivity.id] ?? null,
-                      )}
-                    </p>
-
-                    {selectedActivity.metric_type === "FREQUENCY" ? (
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">
-                          Meta:{" "}
-                        </span>
-                        {selectedActivity.target_frequency ?? 0} vezes
-                      </p>
-                    ) : null}
-
-                    {selectedActivity.metric_type === "QUANTITY" ? (
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">
-                          Meta:{" "}
-                        </span>
-                        {selectedActivity.target_quantity ?? 0}
-                      </p>
-                    ) : null}
-
-                    {selectedActivity.metric_type === "SPECIFIC_DAYS" ? (
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">
-                          Dias:{" "}
-                        </span>
-                        {(selectedActivity.specific_days ?? [])
-                          .map(
-                            (day) =>
-                              DAY_OPTIONS.find((option) => option.value === day)
-                                ?.label ?? day,
-                          )
-                          .join(", ") || "Nenhum"}
-                      </p>
-                    ) : null}
-
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() =>
-                          handleStartEditActivity(selectedActivity.id)
+          {weeks.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="pt-6 text-sm text-muted-foreground">
+                Nenhuma semana ativa encontrada neste calendário.
+              </CardContent>
+            </Card>
+          ) : selectedWeek ? (
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between">
+                  <CardTitle>Resumo da semana</CardTitle>
+                  <CardDescription>
+                    {selectedWeek.average_completion_percentage.toFixed(2)}%
+                  </CardDescription>
+                </div>
+                <Progress
+                  percentage={selectedWeek.average_completion_percentage}
+                  className="h-3"
+                />
+              </CardHeader>
+              <CardContent className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+                <span className="font-medium text-foreground">
+                  Relatório da semana:{" "}
+                </span>
+                {selectedWeekReport ? (
+                  <p className="rounded-md text-justify border border-border bg-muted/60 p-3 font-mono text-xs leading-relaxed text-foreground">
+                    {selectedWeekReport}
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {canShowReportExportDialog ? (
+                      <ActivityReportExportDialog
+                        weekId={selectedWeek.id}
+                        open={isAddReportDialogOpen}
+                        onOpenChange={setIsAddReportDialogOpen}
+                        title="Adicionar relatório"
+                        description="Descreva sua reflexão da semana para gerar o relatório."
+                        trigger={
+                          <Button
+                            type="button"
+                            size="lg"
+                            className="w-fit mx-auto mt-2"
+                            disabled={!selectedWeek.id}
+                          >
+                            Adicionar relatório
+                          </Button>
                         }
-                      >
-                        Editar
-                      </Button>
-                    </div>
+                        onSuccess={async (result) => {
+                          await Promise.all([
+                            queryClient.invalidateQueries({
+                              queryKey: userScopedKey(
+                                userId,
+                                "goal-calendars",
+                                goalCalendarId ?? "unknown",
+                              ),
+                            }),
+                            queryClient.invalidateQueries({
+                              queryKey: userScopedKey(
+                                userId,
+                                "goal-calendars",
+                                "weeks",
+                                selectedWeekId || "unknown",
+                                "activities",
+                                "report",
+                              ),
+                            }),
+                          ]);
 
-                    <div className="rounded-md border border-border bg-muted/30 p-3">
-                      <p className="text-sm font-medium">Progresso</p>
-                      {selectedActivity.metric_type === "QUANTITY" ? (
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <Input
-                            type="number"
-                            min={1}
-                            className="w-32"
-                            value={
-                              progressAmountByActivity[selectedActivity.id] ?? 1
-                            }
-                            onChange={(event) =>
-                              setProgressAmountByActivity((current) => ({
-                                ...current,
-                                [selectedActivity.id]: Number(
-                                  event.target.value || 1,
-                                ),
-                              }))
-                            }
-                          />
-                          <Button
-                            type="button"
-                            onClick={() =>
-                              progressMutation.mutate({
-                                activityId: selectedActivity.id,
-                                metricType: "QUANTITY",
-                                amount:
-                                  progressAmountByActivity[
-                                    selectedActivity.id
-                                  ] ?? 1,
-                              })
-                            }
-                            disabled={progressMutation.isPending}
-                          >
-                            Registrar quantidade
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <select
-                            className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
-                            value={
-                              progressDayByActivity[selectedActivity.id] ??
-                              "monday"
-                            }
-                            onChange={(event) =>
-                              setProgressDayByActivity((current) => ({
-                                ...current,
-                                [selectedActivity.id]: event.target
-                                  .value as ActivityDay,
-                              }))
-                            }
-                          >
-                            {DAY_OPTIONS.map((dayOption) => (
-                              <option
-                                key={dayOption.value}
-                                value={dayOption.value}
-                              >
-                                {dayOption.label}
-                              </option>
-                            ))}
-                          </select>
-                          <Button
-                            type="button"
-                            onClick={() =>
-                              progressMutation.mutate({
-                                activityId: selectedActivity.id,
-                                metricType: selectedActivity.metric_type,
-                                day:
-                                  progressDayByActivity[selectedActivity.id] ??
-                                  "monday",
-                              })
-                            }
-                            disabled={progressMutation.isPending}
-                          >
-                            Marcar progresso
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="border-dashed">
-                  <CardContent className="pt-6 text-sm text-muted-foreground">
-                    Nenhuma atividade cadastrada para esta semana.
-                  </CardContent>
-                </Card>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card ref={activityFormCardRef}>
-            <CardHeader>
-              <CardTitle>
-                {editingActivityId
-                  ? "Editar atividade"
-                  : "Criar atividade da semana"}
-              </CardTitle>
-              <CardDescription>
-                Defina métrica e meta para acompanhar o progresso da semana
-                selecionada.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormProvider {...activityForm}>
-                <form
-                  className="space-y-4"
-                  onSubmit={activityForm.handleSubmit((values) =>
-                    activityMutation.mutate(values),
-                  )}
-                >
-                  <ControlledInput
-                    name="title"
-                    label="Título"
-                    placeholder="Ex.: Treinar"
-                    disabled={activityMutation.isPending}
-                  />
-
-                  <ControlledInput
-                    name="description"
-                    label="Descrição"
-                    placeholder="Ex.: 3x por semana"
-                    disabled={activityMutation.isPending}
-                  />
-
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="metric-type"
-                      className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground"
-                    >
-                      Tipo de métrica
-                    </label>
-                    <select
-                      id="metric-type"
-                      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
-                      value={watchedMetricType}
-                      onChange={(event) =>
-                        activityForm.setValue(
-                          "metric_type",
-                          event.target.value as WeeklyActivityMetricType,
-                          { shouldValidate: true },
-                        )
-                      }
-                      disabled={activityMutation.isPending}
-                    >
-                      {metricTypes.map((metricType) => (
-                        <option key={metricType} value={metricType}>
-                          {getMetricTypeLabel(metricType)}
-                        </option>
-                      ))}
-                    </select>
+                          setDialogStatus("success");
+                          setDialogTitle("Relatório atualizado");
+                          setDialogResult({
+                            statusCode: result.statusCode,
+                            body: "O relatório da semana foi atualizado com sucesso.",
+                          });
+                          setDialogOpen(true);
+                        }}
+                        onError={(error) => {
+                          setDialogStatus("error");
+                          setDialogTitle(
+                            "Não foi possível atualizar o relatório",
+                          );
+                          setDialogResult(error);
+                          setDialogOpen(true);
+                        }}
+                      />
+                    ) : (
+                      <CodePre value="Pendente" />
+                    )}
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="pt-6 text-sm text-muted-foreground">
+                Selecione uma semana para visualizar os detalhes.
+              </CardContent>
+            </Card>
+          )}
 
-                  {watchedMetricType === "FREQUENCY" ? (
-                    <ControlledInput
-                      name="target_frequency"
-                      label="Meta de frequência"
-                      type="number"
-                      min={1}
-                      step={1}
-                      disabled={activityMutation.isPending}
-                    />
-                  ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Suas atividades
+            </label>
+            <ActivityFormDialog
+              open={isCreateActivityFormOpen}
+              mode="create"
+              onOpenChange={(open) => {
+                setIsCreateActivityFormOpen(open);
+                if (!open && !activityMutation.isPending) {
+                  setEditingActivityId(null);
+                  activityForm.reset({
+                    title: "",
+                    description: "",
+                    metric_type: "FREQUENCY",
+                    target_frequency: 1,
+                    target_quantity: undefined,
+                    specific_days: [],
+                  });
+                }
+              }}
+              form={activityForm}
+              metricTypes={metricTypes}
+              dayOptions={DAY_OPTIONS}
+              isPending={activityMutation.isPending}
+              onSubmit={(values) => activityMutation.mutate(values)}
+              onCancel={handleCancelEdit}
+              onStartCreate={handleStartCreateActivity}
+              getMetricTypeLabel={getMetricTypeLabel}
+            />
+          </div>
 
-                  {watchedMetricType === "QUANTITY" ? (
-                    <ControlledInput
-                      name="target_quantity"
-                      label="Meta de quantidade"
-                      type="number"
-                      min={1}
-                      step={1}
-                      disabled={activityMutation.isPending}
-                    />
-                  ) : null}
-
-                  {watchedMetricType === "SPECIFIC_DAYS" ? (
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        Dias específicos
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {DAY_OPTIONS.map((dayOption) => (
-                          <label
-                            key={dayOption.value}
-                            className="flex items-center gap-2 text-sm text-foreground"
-                          >
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border border-input"
-                              checked={watchedSpecificDays.includes(
-                                dayOption.value,
-                              )}
-                              onChange={() =>
-                                handleToggleSpecificDay(dayOption.value)
-                              }
-                              disabled={activityMutation.isPending}
-                            />
-                            {dayOption.label}
-                          </label>
-                        ))}
-                      </div>
-                      {activityForm.formState.errors.specific_days?.message ? (
-                        <p className="text-sm text-destructive">
-                          {activityForm.formState.errors.specific_days.message}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="submit" disabled={activityMutation.isPending}>
-                      {activityMutation.isPending
-                        ? "Salvando..."
-                        : editingActivityId
-                          ? "Salvar atividade"
-                          : "Criar atividade"}
-                    </Button>
-                    {editingActivityId ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleCancelEdit}
-                        disabled={activityMutation.isPending}
-                      >
-                        Cancelar edição
-                      </Button>
-                    ) : null}
-                  </div>
-                </form>
-              </FormProvider>
-            </CardContent>
-          </Card>
+          {isLoadingActivities ? (
+            <Card className="border-dashed">
+              <CardContent className="pt-6 text-sm text-muted-foreground">
+                Carregando atividades...
+              </CardContent>
+            </Card>
+          ) : activities.length > 0 ? (
+            activities.map((activity) => (
+              <ActivityCard
+                title={activity.title}
+                description={activity.description}
+                progressValueLabel={`${activity.completion_percentage.toFixed(2)}%`}
+                goalLabel={
+                  activity.metric_type === "FREQUENCY"
+                    ? `${activity.target_frequency ?? 0} vezes`
+                    : activity.metric_type === "QUANTITY"
+                      ? String(activity.target_quantity ?? 0)
+                      : getSpecificDaysLabel(activity.specific_days ?? [])
+                }
+                metricLabel={getMetricTypeLabel(activity.metric_type)}
+                onEdit={() => handleStartEditActivity(activity.id)}
+                progressMetricType={activity.metric_type}
+                progressDayOptions={
+                  activity.metric_type === "SPECIFIC_DAYS"
+                    ? DAY_OPTIONS.filter((dayOption) =>
+                        (activity.specific_days ?? []).includes(
+                          dayOption.value,
+                        ),
+                      )
+                    : DAY_OPTIONS
+                }
+                progressPending={progressMutation.isPending}
+                markProgressDisabled={
+                  progressMutation.isPending ||
+                  (activity.metric_type === "SPECIFIC_DAYS" &&
+                    (activity.specific_days ?? []).length === 0)
+                }
+                onMarkProgress={(payload) =>
+                  progressMutation.mutate({
+                    activityId: activity.id,
+                    payload,
+                  })
+                }
+                editDialogProps={{
+                  open: editingActivityId === activity.id,
+                  onOpenChange: (open) => {
+                    if (!open && !activityMutation.isPending) {
+                      handleCancelEdit();
+                    }
+                  },
+                  form: activityForm,
+                  metricTypes,
+                  dayOptions: DAY_OPTIONS,
+                  isPending: activityMutation.isPending,
+                  onSubmit: (values) => activityMutation.mutate(values),
+                  onCancel: handleCancelEdit,
+                  getMetricTypeLabel,
+                }}
+              />
+            ))
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="pt-6 text-sm text-muted-foreground">
+                Nenhuma atividade cadastrada para esta semana.
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 

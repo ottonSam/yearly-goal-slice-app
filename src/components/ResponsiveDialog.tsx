@@ -1,4 +1,4 @@
-import * as React from "react"
+import * as React from "react";
 
 import {
   Dialog,
@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
@@ -17,19 +17,19 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@/components/ui/drawer"
-import { useMediaQuery } from "@/hooks/use-media-query"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/drawer";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { cn } from "@/lib/utils";
 
 interface ResponsiveDialogProps {
-  trigger: React.ReactNode
-  title: string
-  description?: string
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  contentClassName?: string
-  children: React.ReactNode
-  footer?: React.ReactNode
+  trigger: React.ReactNode;
+  title: string;
+  description?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  contentClassName?: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
 }
 
 export function ResponsiveDialog({
@@ -42,13 +42,13 @@ export function ResponsiveDialog({
   children,
   footer,
 }: ResponsiveDialogProps) {
-  const isDesktop = useMediaQuery("(min-width: 768px)")
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogTrigger asChild>{trigger}</DialogTrigger>
-        <DialogContent className={cn("sm:max-w-[520px]", contentClassName)}>
+        <DialogContent className={cn("sm:max-w-130", contentClassName)}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {description ? (
@@ -59,7 +59,7 @@ export function ResponsiveDialog({
           {footer ? <DialogFooter>{footer}</DialogFooter> : null}
         </DialogContent>
       </Dialog>
-    )
+    );
   }
 
   return (
@@ -73,8 +73,10 @@ export function ResponsiveDialog({
           ) : null}
         </DrawerHeader>
         <div className="px-4 pb-2">{children}</div>
-        {footer ? <DrawerFooter className="px-4 pb-4">{footer}</DrawerFooter> : null}
+        {footer ? (
+          <DrawerFooter className="px-4 pb-4">{footer}</DrawerFooter>
+        ) : null}
       </DrawerContent>
     </Drawer>
-  )
+  );
 }
