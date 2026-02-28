@@ -5,6 +5,7 @@ import { RouterProvider } from "react-router-dom"
 import "./index.css"
 import router from "./routes"
 import { AuthProvider } from "@/contexts/auth"
+import { ThemeProvider } from "@/contexts/theme"
 
 const queryClient = new QueryClient()
 
@@ -41,9 +42,11 @@ disableMobileZoom()
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>,
 )

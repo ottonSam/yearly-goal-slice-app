@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 import {
   Drawer,
   DrawerClose,
@@ -16,6 +17,10 @@ const navigationItems = [
   {
     name: "Objetivos",
     href: "/objectives",
+  },
+  {
+    name: "Carteiras",
+    href: "/wallets",
   },
   {
     name: "Meu perfil",
@@ -49,6 +54,10 @@ export default function AppLayout() {
 
     if (href === "/goal-calendars") {
       return location.pathname.startsWith("/goal-calendars");
+    }
+
+    if (href === "/wallets") {
+      return location.pathname.startsWith("/wallets");
     }
 
     return location.pathname === href;
@@ -96,6 +105,18 @@ export default function AppLayout() {
                   </DrawerClose>
                 ))}
               </nav>
+
+              <div className="mt-auto pt-2">
+                <DrawerClose asChild>
+                  <Button
+                    variant="ghost"
+                    onClick={logout}
+                    className="w-full justify-start"
+                  >
+                    Logout
+                  </Button>
+                </DrawerClose>
+              </div>
             </DrawerContent>
           </Drawer>
 
@@ -109,9 +130,7 @@ export default function AppLayout() {
             </Link>
           </div>
 
-          <Button variant="ghost" onClick={logout}>
-            Logout
-          </Button>
+          <ThemeSwitch />
         </div>
       </header>
 
