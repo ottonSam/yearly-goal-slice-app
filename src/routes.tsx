@@ -12,6 +12,8 @@ import GoalCalendarsPage from "@/pages/goal-calendars/page";
 import GoalCalendarDetailsPage from "@/pages/goal-calendar-details/page";
 import ObjectivesHomePage from "@/pages/objectives/page";
 import ObjectiveFormPage from "@/pages/objective-form/page";
+import WalletsPage from "@/pages/wallets/page";
+import WalletFormPage from "@/pages/wallet-form/page";
 
 const isDev = import.meta.env.VITE_ENV === "dev";
 
@@ -69,6 +71,18 @@ const router = createBrowserRouter([
           {
             path: "/goal-calendars/:goalCalendarId",
             element: <GoalCalendarDetailsPage />,
+          },
+          {
+            path: "/wallets",
+            element: <WalletsPage />,
+          },
+          {
+            path: "/wallets/new",
+            element: <WalletFormPage />,
+          },
+          {
+            path: "/wallets/edit/:walletId",
+            element: <WalletFormPage />,
           },
         ],
       },

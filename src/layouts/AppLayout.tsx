@@ -18,6 +18,10 @@ const navigationItems = [
     href: "/objectives",
   },
   {
+    name: "Carteiras",
+    href: "/wallets",
+  },
+  {
     name: "Meu perfil",
     href: "/me",
   },
@@ -49,6 +53,10 @@ export default function AppLayout() {
 
     if (href === "/goal-calendars") {
       return location.pathname.startsWith("/goal-calendars");
+    }
+
+    if (href === "/wallets") {
+      return location.pathname.startsWith("/wallets");
     }
 
     return location.pathname === href;
