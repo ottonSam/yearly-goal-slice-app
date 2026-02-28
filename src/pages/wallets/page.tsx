@@ -111,6 +111,7 @@ export default function WalletsPage() {
               cycleLabel={formatCycleLabel(wallet.cycle_starts, wallet.cycle_ends)}
               monthlyLimitLabel={formatCurrencyBRL(wallet.cycle_limit_default)}
               totalLimitLabel={formatCurrencyBRL(wallet.limit)}
+              onOpenCycle={() => navigate(`/wallets/${wallet.id}/cycle`)}
               onEdit={() => navigate(`/wallets/edit/${wallet.id}`)}
             />
           ))}

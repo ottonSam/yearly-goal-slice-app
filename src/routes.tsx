@@ -14,6 +14,7 @@ import ObjectivesHomePage from "@/pages/objectives/page";
 import ObjectiveFormPage from "@/pages/objective-form/page";
 import WalletsPage from "@/pages/wallets/page";
 import WalletFormPage from "@/pages/wallet-form/page";
+import WalletCyclePage from "@/pages/wallet-cycle/page";
 
 const isDev = import.meta.env.VITE_ENV === "dev";
 
@@ -83,6 +84,10 @@ const router = createBrowserRouter([
           {
             path: "/wallets/edit/:walletId",
             element: <WalletFormPage />,
+          },
+          {
+            path: "/wallets/:walletId/cycle",
+            element: <WalletCyclePage />,
           },
         ],
       },

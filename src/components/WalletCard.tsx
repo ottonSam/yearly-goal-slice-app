@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from "react";
 import { CreditCard, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ interface WalletCardProps {
   cycleLabel: string;
   monthlyLimitLabel: string;
   totalLimitLabel: string;
+  onOpenCycle?: () => void;
   onEdit?: () => void;
 }
 
@@ -16,10 +18,28 @@ export function WalletCard({
   cycleLabel,
   monthlyLimitLabel,
   totalLimitLabel,
+  onOpenCycle,
   onEdit,
 }: WalletCardProps) {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!onOpenCycle) {
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onOpenCycle();
+    }
+  };
+
   return (
-    <Card className="rounded-3xl border-[var(--brand-200)] bg-[var(--brand-100)]/55 p-5 shadow-none sm:p-7">
+    <Card
+      className="rounded-3xl border-[var(--brand-200)] bg-[var(--brand-100)]/55 p-5 shadow-none transition-colors hover:bg-[var(--brand-100)]/70 sm:p-7"
+      role={onOpenCycle ? "button" : undefined}
+      tabIndex={onOpenCycle ? 0 : undefined}
+      onClick={onOpenCycle}
+      onKeyDown={handleKeyDown}
+    >
       <div className="flex items-start justify-between gap-4 sm:gap-5">
         <div className="flex items-center gap-4 sm:gap-5">
           <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl border border-border/80 bg-card">
@@ -42,8 +62,11 @@ export function WalletCard({
           type="button"
           size="icon"
           variant="ghost"
-          onClick={onEdit}
-          className="size-10 text-primary hover:bg-primary/10 hover:text-primary"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit?.();
+          }}
+          className="h-12 w-12 p-3 text-primary hover:bg-primary/10 hover:text-primary"
           aria-label={`Editar carteira ${name}`}
         >
           <Pencil className="h-5 w-5" aria-hidden />
