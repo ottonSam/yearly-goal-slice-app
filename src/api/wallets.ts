@@ -81,6 +81,23 @@ export interface WalletExpenseCategory {
   updated_at: string;
 }
 
+export interface WalletCycleBillingCategorySummary {
+  category_id: string;
+  category_name: string;
+  category_icon: string;
+  category_color: string;
+  total_spent: string;
+}
+
+export interface WalletCycleBillingSummary {
+  total_cycle_spent: string;
+  spending_by_category: WalletCycleBillingCategorySummary[];
+  total_cycle_installment_spent: string;
+  total_cycle_recurring_spent: string;
+  total_future_installment_spent: string;
+  remaining_limit_per_day?: string | null;
+}
+
 export interface CreateWalletExpensePayload {
   expense_cycle: string;
   expense_category: string;
@@ -155,6 +172,13 @@ export async function listWalletExpensesByCycle(expenseCycleId: string) {
 
 export async function listWalletExpenseCategories() {
   const { data } = await api.get<WalletExpenseCategory[]>("/wallets/categories/");
+  return data;
+}
+
+export async function getWalletCycleBillingSummary(expenseCycleId: string) {
+  const { data } = await api.get<WalletCycleBillingSummary>(
+    `/wallets/cycle/${expenseCycleId}/billing-summary/`,
+  );
   return data;
 }
 
