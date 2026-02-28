@@ -50,3 +50,28 @@ export const walletExpenseSchema = z
 
 export const walletExpenseListSchema = z.array(walletExpenseSchema);
 export type WalletExpense = z.infer<typeof walletExpenseSchema>;
+
+export const walletCycleBillingCategorySchema = z
+  .object({
+    category_id: z.string(),
+    category_name: z.string(),
+    category_icon: z.string(),
+    category_color: z.string(),
+    total_spent: z.string(),
+  })
+  .passthrough();
+
+export const walletCycleBillingSummarySchema = z
+  .object({
+    total_cycle_spent: z.string(),
+    spending_by_category: z.array(walletCycleBillingCategorySchema),
+    total_cycle_installment_spent: z.string(),
+    total_cycle_recurring_spent: z.string(),
+    total_future_installment_spent: z.string(),
+    remaining_limit_per_day: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+export type WalletCycleBillingSummary = z.infer<
+  typeof walletCycleBillingSummarySchema
+>;

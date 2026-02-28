@@ -26,6 +26,11 @@ export interface Wallet {
   updated_at: string;
 }
 
+export interface WalletWithRemainingLimits extends Wallet {
+  remaining_total_limit: number;
+  remaining_cycle_limit: number;
+}
+
 export interface ExpenseCycle {
   id: string;
   wallet: string;
@@ -76,6 +81,23 @@ export interface WalletExpenseCategory {
   updated_at: string;
 }
 
+export interface WalletCycleBillingCategorySummary {
+  category_id: string;
+  category_name: string;
+  category_icon: string;
+  category_color: string;
+  total_spent: string;
+}
+
+export interface WalletCycleBillingSummary {
+  total_cycle_spent: string;
+  spending_by_category: WalletCycleBillingCategorySummary[];
+  total_cycle_installment_spent: string;
+  total_cycle_recurring_spent: string;
+  total_future_installment_spent: string;
+  remaining_limit_per_day?: string | null;
+}
+
 export interface CreateWalletExpensePayload {
   expense_cycle: string;
   expense_category: string;
@@ -108,12 +130,12 @@ export interface CreateWalletExpenseCategoryPayload {
 }
 
 export async function listWallets() {
-  const { data } = await api.get<Wallet[]>("/wallets/");
+  const { data } = await api.get<WalletWithRemainingLimits[]>("/wallets/");
   return data;
 }
 
 export async function getWalletById(walletId: string) {
-  const { data } = await api.get<Wallet>(`/wallets/${walletId}/`);
+  const { data } = await api.get<WalletWithRemainingLimits>(`/wallets/${walletId}/`);
   return data;
 }
 
@@ -150,6 +172,13 @@ export async function listWalletExpensesByCycle(expenseCycleId: string) {
 
 export async function listWalletExpenseCategories() {
   const { data } = await api.get<WalletExpenseCategory[]>("/wallets/categories/");
+  return data;
+}
+
+export async function getWalletCycleBillingSummary(expenseCycleId: string) {
+  const { data } = await api.get<WalletCycleBillingSummary>(
+    `/wallets/cycle/${expenseCycleId}/billing-summary/`,
+  );
   return data;
 }
 
