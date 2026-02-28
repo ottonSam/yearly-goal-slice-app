@@ -7,6 +7,7 @@ import VerifyEmailPage from "@/pages/verify-email/page";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import MePage from "@/pages/me/page";
 import AppLayout from "@/layouts/AppLayout";
+import PublicLayout from "@/layouts/PublicLayout";
 import GoalCalendarFormPage from "@/pages/goal-calendar-form/page";
 import GoalCalendarsPage from "@/pages/goal-calendars/page";
 import GoalCalendarDetailsPage from "@/pages/goal-calendar-details/page";
@@ -24,16 +25,21 @@ const router = createBrowserRouter([
     element: <Navigate to="/objectives" replace />,
   },
   {
-    path: "/register",
-    element: <RegisterPage />,
-  },
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    path: "/verify-email",
-    element: <VerifyEmailPage />,
+    element: <PublicLayout />,
+    children: [
+      {
+        path: "/register",
+        element: <RegisterPage />,
+      },
+      {
+        path: "/login",
+        element: <LoginPage />,
+      },
+      {
+        path: "/verify-email",
+        element: <VerifyEmailPage />,
+      },
+    ],
   },
   {
     element: <ProtectedRoute />,

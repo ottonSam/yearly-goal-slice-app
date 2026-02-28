@@ -34,7 +34,7 @@ export function WalletCard({
 
   return (
     <Card
-      className="rounded-3xl border-[var(--brand-200)] bg-[var(--brand-100)]/55 p-5 shadow-none transition-colors hover:bg-[var(--brand-100)]/70 sm:p-7"
+      className="rounded-3xl border-border/80 bg-card p-5 shadow-sm transition-colors hover:bg-accent/35 sm:p-7"
       role={onOpenCycle ? "button" : undefined}
       tabIndex={onOpenCycle ? 0 : undefined}
       onClick={onOpenCycle}
@@ -74,7 +74,7 @@ export function WalletCard({
       </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-3xl bg-card/70 p-5">
+        <div className="rounded-3xl bg-muted/65 p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
             Limite mensal
           </p>
@@ -82,7 +82,7 @@ export function WalletCard({
             {monthlyLimitLabel}
           </p>
         </div>
-        <div className="rounded-3xl bg-card/70 p-5">
+        <div className="rounded-3xl bg-muted/65 p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
             Limite total
           </p>
