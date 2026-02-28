@@ -109,8 +109,15 @@ export default function WalletsPage() {
               key={wallet.id}
               name={wallet.name}
               cycleLabel={formatCycleLabel(wallet.cycle_starts, wallet.cycle_ends)}
-              monthlyLimitLabel={formatCurrencyBRL(wallet.cycle_limit_default)}
-              totalLimitLabel={formatCurrencyBRL(wallet.limit)}
+              monthlyRemainingLimitLabel={formatCurrencyBRL(
+                wallet.remaining_cycle_limit,
+              )}
+              totalRemainingLimitLabel={formatCurrencyBRL(
+                wallet.remaining_total_limit,
+              )}
+              isDanger={
+                wallet.remaining_cycle_limit < 0 || wallet.remaining_total_limit < 0
+              }
               onOpenCycle={() => navigate(`/wallets/${wallet.id}/cycle`)}
               onEdit={() => navigate(`/wallets/edit/${wallet.id}`)}
             />

@@ -9,6 +9,8 @@ export const walletSchema = z
     name: z.string(),
     limit: z.string(),
     cycle_limit_default: z.string(),
+    remaining_total_limit: z.coerce.number(),
+    remaining_cycle_limit: z.coerce.number(),
     cycle_starts: z.number(),
     cycle_ends: z.number(),
     active: z.boolean(),

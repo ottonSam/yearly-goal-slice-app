@@ -26,6 +26,11 @@ export interface Wallet {
   updated_at: string;
 }
 
+export interface WalletWithRemainingLimits extends Wallet {
+  remaining_total_limit: number;
+  remaining_cycle_limit: number;
+}
+
 export interface ExpenseCycle {
   id: string;
   wallet: string;
@@ -108,12 +113,12 @@ export interface CreateWalletExpenseCategoryPayload {
 }
 
 export async function listWallets() {
-  const { data } = await api.get<Wallet[]>("/wallets/");
+  const { data } = await api.get<WalletWithRemainingLimits[]>("/wallets/");
   return data;
 }
 
 export async function getWalletById(walletId: string) {
-  const { data } = await api.get<Wallet>(`/wallets/${walletId}/`);
+  const { data } = await api.get<WalletWithRemainingLimits>(`/wallets/${walletId}/`);
   return data;
 }
 
