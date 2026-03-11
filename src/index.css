@@ -53,6 +53,8 @@
 }
 
 :root {
+  --app-viewport-height: 100dvh;
+  --virtual-keyboard-offset: 0px;
   --radius: 0.875rem;
 
   --brand-50: #f3f6e9;
@@ -118,6 +120,12 @@
   --warning-foreground: #2f1d0b;
   --info: #3e6e8b;
   --info-foreground: #f2f7fb;
+}
+
+@supports not (height: 100dvh) {
+  :root {
+    --app-viewport-height: 100vh;
+  }
 }
 
 .dark {

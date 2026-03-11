@@ -11,8 +11,8 @@ export default function StyleguideLayout() {
       : `${location.pathname}${location.hash}`
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col gap-6 overflow-y-auto border-r border-border bg-sidebar p-6">
+    <div className="flex min-h-[var(--app-viewport-height)] bg-background text-foreground">
+      <aside className="fixed left-0 top-0 flex h-[var(--app-viewport-height)] w-64 flex-col gap-6 overflow-y-auto border-r border-border bg-sidebar p-6">
         <div>
           <Link
             to="/styleguide#design-tokens"

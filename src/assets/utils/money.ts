@@ -13,5 +13,5 @@ export function formatCurrencyBRL(value: string | number) {
 }
 
 export function normalizeMoneyInput(value: string) {
-  return value.trim().replace(",", ".");
+  return value.trim().replace(/,/g, ".");
 }

@@ -64,7 +64,7 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-background text-foreground">
+    <div className="h-[var(--app-viewport-height)] overflow-hidden bg-background text-foreground">
       <header className="fixed left-0 top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
           <Drawer>
@@ -134,7 +134,10 @@ export default function AppLayout() {
         </div>
       </header>
 
-      <main className="h-screen overflow-y-auto pt-16">
+      <main
+        className="h-[var(--app-viewport-height)] overflow-y-auto pt-16"
+        data-mobile-keyboard-scroll-root
+      >
         <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
           <Outlet />
         </div>

@@ -52,7 +52,7 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-[var(--app-viewport-height)] bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-md flex-col gap-8 px-6 py-12">
         <header className="space-y-2">
           <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
