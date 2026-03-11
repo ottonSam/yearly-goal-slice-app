@@ -58,7 +58,6 @@ const DrawerContent = React.forwardRef<
           positionClasses[position],
           className
         )}
-        data-mobile-keyboard-scroll-root
         {...props}
       >
         {showHandle ? (
