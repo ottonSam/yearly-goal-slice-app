@@ -6,6 +6,7 @@ import "./index.css"
 import router from "./routes"
 import { AuthProvider } from "@/contexts/auth"
 import { ThemeProvider } from "@/contexts/theme"
+import { MobileViewportRuntime } from "@/components/MobileViewportRuntime"
 
 const queryClient = new QueryClient()
 
@@ -44,6 +45,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
+          <MobileViewportRuntime />
           <RouterProvider router={router} />
         </AuthProvider>
       </ThemeProvider>

@@ -37,13 +37,13 @@ const DrawerContent = React.forwardRef<
 >(({ className, children, position = "bottom", ...props }, ref) => {
   const positionClasses = {
     bottom:
-      "inset-x-0 bottom-0 w-full rounded-t-[24px] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+      "inset-x-0 bottom-[var(--virtual-keyboard-offset)] w-full max-h-[var(--app-viewport-height)] rounded-t-[24px] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
     top:
-      "inset-x-0 top-0 w-full rounded-b-[24px] data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+      "inset-x-0 top-0 w-full max-h-[var(--app-viewport-height)] rounded-b-[24px] data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
     left:
-      "inset-y-0 left-0 h-full w-full rounded-r-[24px] data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
+      "left-0 top-0 h-[var(--app-viewport-height)] w-full rounded-r-[24px] data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
     right:
-      "inset-y-0 right-0 h-full w-full rounded-l-[24px] data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+      "right-0 top-0 h-[var(--app-viewport-height)] w-full rounded-l-[24px] data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
   }
 
   const showHandle = position === "bottom" || position === "top"
@@ -54,10 +54,11 @@ const DrawerContent = React.forwardRef<
       <DrawerPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed z-50 flex flex-col border border-border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out",
+          "fixed z-50 flex flex-col overflow-y-auto overscroll-contain border border-border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out",
           positionClasses[position],
           className
         )}
+        data-mobile-keyboard-scroll-root
         {...props}
       >
         {showHandle ? (
