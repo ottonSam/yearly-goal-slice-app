@@ -67,24 +67,19 @@ export function ResponsiveDialog({
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       <DrawerContent
         className={cn(
-          "max-h-[calc(var(--app-viewport-height)-var(--virtual-keyboard-offset))] overflow-hidden",
+          "max-h-[var(--app-viewport-height)]",
           contentClassName,
         )}
       >
-        <DrawerHeader className="shrink-0 text-left">
+        <DrawerHeader className="text-left">
           <DrawerTitle>{title}</DrawerTitle>
           {description ? (
             <DrawerDescription>{description}</DrawerDescription>
           ) : null}
         </DrawerHeader>
-        <div
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2"
-          data-mobile-keyboard-scroll-root
-        >
-          {children}
-        </div>
+        <div className="px-4 pb-2">{children}</div>
         {footer ? (
-          <DrawerFooter className="shrink-0 px-4 pb-4">{footer}</DrawerFooter>
+          <DrawerFooter className="px-4 pb-4">{footer}</DrawerFooter>
         ) : null}
       </DrawerContent>
     </Drawer>
