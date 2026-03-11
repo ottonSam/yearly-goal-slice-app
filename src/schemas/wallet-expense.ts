@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const moneyRegex = /^\d+(\.\d{1,2})?$/;
+const moneyRegex = /^\d+([.,]\d{1,2})?$/;
 
 export const walletExpenseTypeSchema = z.enum([
   "single_expense",
@@ -39,7 +39,7 @@ export const walletExpenseFormSchema = z
         ctx.addIssue({
           code: "custom",
           path: ["total_amount"],
-          message: "Informe um valor válido (ex.: 2400.00).",
+          message: "Informe um valor válido (ex.: 2400.00 ou 2400,00).",
         });
       }
 
@@ -70,7 +70,7 @@ export const walletExpenseFormSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["amount"],
-        message: "Informe um valor válido (ex.: 150.00).",
+        message: "Informe um valor válido (ex.: 150.00 ou 150,00).",
       });
     }
 
@@ -94,7 +94,7 @@ export const walletSingleExpenseEditFormSchema = z.object({
   description: z.string().min(1, "Informe a descrição."),
   amount: z
     .string()
-    .regex(moneyRegex, "Informe um valor válido (ex.: 150.00)."),
+    .regex(moneyRegex, "Informe um valor válido (ex.: 150.00 ou 150,00)."),
   date: z.string().min(1, "Informe a data da despesa."),
 });
 

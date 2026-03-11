@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const moneyRegex = /^\d+(\.\d{1,2})?$/;
+const moneyRegex = /^\d+([.,]\d{1,2})?$/;
 
 export const walletSchema = z
   .object({
@@ -26,10 +26,10 @@ export const walletFormSchema = z.object({
   name: z.string().min(1, "Informe o nome da carteira."),
   limit: z
     .string()
-    .regex(moneyRegex, "Informe um valor válido (ex.: 5000.00)."),
+    .regex(moneyRegex, "Informe um valor válido (ex.: 5000.00 ou 5000,00)."),
   cycle_limit_default: z
     .string()
-    .regex(moneyRegex, "Informe um valor válido (ex.: 3000.00)."),
+    .regex(moneyRegex, "Informe um valor válido (ex.: 3000.00 ou 3000,00)."),
   cycle_starts: z.coerce
     .number()
     .int("Informe um dia inteiro.")
