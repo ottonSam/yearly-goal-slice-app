@@ -41,14 +41,11 @@ function readViewportState(): ViewportState {
   const viewportOffsetTop = Math.round(
     Math.max(0, visualViewport?.offsetTop ?? 0)
   )
-  const keyboardOffset = Math.round(
-    Math.max(0, window.innerHeight - viewportHeight - viewportOffsetTop)
-  )
 
   return {
     viewportHeight,
     viewportOffsetTop,
-    keyboardOffset,
+    keyboardOffset: 0,
   }
 }
 
@@ -131,6 +128,7 @@ export function useMobileKeyboardViewport() {
     innerWidth: 0,
     innerHeight: 0,
   })
+  const baseInnerHeightRef = React.useRef(0)
   const animationFrameRef = React.useRef<number | null>(null)
   const settleTimeoutRef = React.useRef<number | null>(null)
 
@@ -145,6 +143,7 @@ export function useMobileKeyboardViewport() {
     if (!isTouchDevice) {
       return
     }
+    baseInnerHeightRef.current = window.innerHeight
 
     const alignFocusedElementToCenter = () => {
       const activeElement = document.activeElement
@@ -182,9 +181,33 @@ export function useMobileKeyboardViewport() {
     }
 
     const syncViewportState = () => {
-      const nextState = readViewportState()
+      const nextStateDraft = readViewportState()
       const previousRuntimeState = runtimeStateRef.current
-      const keyboardOpen = nextState.keyboardOffset >= KEYBOARD_OPEN_THRESHOLD
+      const currentInnerHeight = window.innerHeight
+      const orientationChanged =
+        Math.abs(window.innerWidth - previousRuntimeState.innerWidth) >=
+          VIEWPORT_HEIGHT_CHANGE_THRESHOLD &&
+        Math.abs(currentInnerHeight - previousRuntimeState.innerHeight) >=
+          VIEWPORT_HEIGHT_CHANGE_THRESHOLD
+
+      if (orientationChanged) {
+        baseInnerHeightRef.current = currentInnerHeight
+      }
+
+      const visualViewportBottom =
+        nextStateDraft.viewportHeight + nextStateDraft.viewportOffsetTop
+      const keyboardOffset = Math.round(
+        Math.max(
+          0,
+          currentInnerHeight - visualViewportBottom,
+          baseInnerHeightRef.current - visualViewportBottom
+        )
+      )
+      const nextState = {
+        ...nextStateDraft,
+        keyboardOffset,
+      }
+      const keyboardOpen = keyboardOffset >= KEYBOARD_OPEN_THRESHOLD
       const keyboardJustOpened =
         !previousRuntimeState.keyboardOpen && keyboardOpen
       const viewportChanged =
@@ -195,7 +218,7 @@ export function useMobileKeyboardViewport() {
         ) >= VIEWPORT_HEIGHT_CHANGE_THRESHOLD ||
         Math.abs(window.innerWidth - previousRuntimeState.innerWidth) >=
           VIEWPORT_WIDTH_CHANGE_THRESHOLD ||
-        Math.abs(window.innerHeight - previousRuntimeState.innerHeight) >=
+        Math.abs(currentInnerHeight - previousRuntimeState.innerHeight) >=
           VIEWPORT_HEIGHT_CHANGE_THRESHOLD
 
       viewportStateRef.current = nextState
@@ -204,7 +227,10 @@ export function useMobileKeyboardViewport() {
         viewportHeight: nextState.viewportHeight,
         viewportOffsetTop: nextState.viewportOffsetTop,
         innerWidth: window.innerWidth,
-        innerHeight: window.innerHeight,
+        innerHeight: currentInnerHeight,
+      }
+      if (!keyboardOpen) {
+        baseInnerHeightRef.current = currentInnerHeight
       }
 
       const appViewportHeight = Math.round(
