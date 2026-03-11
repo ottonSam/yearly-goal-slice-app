@@ -207,8 +207,14 @@ export function useMobileKeyboardViewport() {
         innerHeight: window.innerHeight,
       }
 
+      const appViewportHeight = Math.round(
+        Math.max(
+          0,
+          nextState.viewportHeight + nextState.viewportOffsetTop
+        )
+      )
       const rootStyle = document.documentElement.style
-      rootStyle.setProperty("--app-viewport-height", `${nextState.viewportHeight}px`)
+      rootStyle.setProperty("--app-viewport-height", `${appViewportHeight}px`)
       rootStyle.setProperty("--virtual-keyboard-offset", `${nextState.keyboardOffset}px`)
 
       if (keyboardOpen && (keyboardJustOpened || viewportChanged)) {
